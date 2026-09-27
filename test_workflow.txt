@@ -1,0 +1,129 @@
+BLUEB BROWSER WORKFLOW CHECKLIST
+================================
+
+Purpose
+-------
+Use this checklist to manually verify sign-in, incident creation, attachments,
+case search, and role-based case actions in a browser. Mark each step PASS or
+FAIL and note any error message or unexpected behavior.
+
+Before you start
+----------------
+1. Open a terminal in the project root.
+2. Start the backend:
+     cd backend
+     npm install
+     npm run seed
+     npm start
+   The seed command creates the local demo accounts and sample cases. Use it
+   only with a development database. The backend should report that it is
+   listening on http://localhost:4000.
+3. Open a second terminal in the project root and start the frontend:
+     cd frontend
+     npm install
+     npm run dev
+4. Open http://localhost:5173 in your browser.
+5. If the browser shows an API or network error, confirm both terminals are
+   still running. Do not run the seed command against data you want to keep.
+
+Demo accounts
+-------------
+All seeded demo accounts use password: password123
+
+  zemenu     SOC Analyst
+  iranalyst  IR Analyst
+  admin      SOC Admin
+
+Basic sign-in and session checks
+--------------------------------
+[ ] 1. Sign in as zemenu. Confirm the dashboard loads and shows the signed-in
+       username and SOC Analyst role.
+[ ] 2. Refresh the page. Confirm you remain signed in and the dashboard loads.
+[ ] 3. Sign out, then sign in as iranalyst. Confirm the account and role shown
+       in the sidebar are correct.
+[ ] 4. Sign out, then sign in as admin. Confirm the account and role are correct
+       and User Management appears in the sidebar.
+[ ] 5. As zemenu, try opening /users directly in the address bar. Confirm the
+       app returns you to the dashboard and does not show user management.
+
+Create an incident with an attachment
+--------------------------------------
+[ ] 6. Sign in as zemenu and open Incident Panel, then choose Create case.
+[ ] 7. Complete the required incident details. Add source and destination IPs,
+       date and time, asset, origin, attack type, severity, shift, HTTP status,
+       summary, impact, and recommendations.
+[ ] 8. Continue to Add IOCs. Add an IOC type and threat intelligence source.
+[ ] 9. Upload a small image or document (under 10 MB) to the IOC. Confirm the
+       filename appears, then add the IOC.
+[ ] 10. Continue to Review and inspect the incident and IOC details. Submit.
+[ ] 11. Confirm the new case detail page opens and displays the incident data.
+[ ] 12. Open the attachment from the case. Confirm it loads while signed in.
+       Copy its URL into a private/incognito window without signing in; confirm
+       the file is not accessible there.
+[ ] 13. Try submitting a second incident with a required field missing. Confirm
+       the form explains what needs to be completed and does not create a case.
+
+Search and navigation
+---------------------
+[ ] 14. Use the top-bar Search cases field to search for a distinctive word
+       from the new case title. Press Enter. Confirm the case list shows the
+       matching result and the browser URL includes ?q= with the search term.
+[ ] 15. Refresh the search results. Confirm the search term and results remain.
+[ ] 16. Clear the case-list search. Confirm the result list updates.
+[ ] 17. Use each Case list sidebar filter and confirm only its matching status
+       is highlighted. Open My cases and confirm only My cases is highlighted.
+[ ] 18. On a narrow/mobile browser window, open the navigation, follow a link,
+       and confirm the menu closes. Confirm the page remains usable without
+       horizontal overflow.
+
+Role-based actions
+------------------
+Assignment (SOC Admin only)
+[ ] 19. As admin, open the case created above. Assign it to an active user.
+       Confirm the assignee changes and an assignment activity entry appears.
+[ ] 20. As zemenu or iranalyst, open the same case. Confirm assignment controls
+       are not available. If you try the assignment API action through the UI,
+       it should be denied.
+
+Rejection (SOC Admin and IR Analyst)
+[ ] 21. As zemenu, confirm Reject is not available in the Incident Panel or case
+       detail page.
+[ ] 22. As iranalyst, reject a test case and enter a reason. Confirm it appears
+       under Rejected by IR Analyst and its activity history records the action.
+[ ] 23. As admin, reject a different test case. Confirm it appears under
+       Rejected by SOC Admin.
+[ ] 24. Confirm a rejected case cannot be rejected again from the new-incidents
+       view. Confirm ordinary status controls do not let an analyst mark a case
+       Rejected without using the permitted reject action.
+
+Archive and restore (SOC Admin only)
+[ ] 25. As admin, archive a test case. Confirm it leaves the active case list
+       and appears in Archive.
+[ ] 26. Restore the archived case. Confirm it returns to the active case list.
+[ ] 27. As zemenu and iranalyst, confirm archive/restore controls are hidden and
+       unavailable.
+
+Session and error handling
+--------------------------
+[ ] 28. Sign in, then have an admin deactivate that account from User
+       Management. On the deactivated account, make another API-backed action
+       or reload the page. Confirm the session ends and login is shown.
+[ ] 29. Sign in again, then have an admin change that user's role. Make an
+       admin-only request using the existing session. Confirm the new role is
+       enforced immediately; a permission-denied response should not sign the
+       user out.
+[ ] 30. Stop the backend while viewing a page, then trigger a data refresh.
+       Note whether the page gives a clear error and recovers after the backend
+       is restarted.
+
+Results
+-------
+Date/browser:
+
+PASS count:
+FAIL count:
+
+Issues to report (include step number, role, expected behavior, actual behavior,
+and any visible error text):
+
+
