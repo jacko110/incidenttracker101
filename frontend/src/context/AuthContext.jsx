@@ -4,28 +4,28 @@ import { api, SESSION_INVALID } from "../api";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => sessionStorage.getItem("blueb_token"));
+  const [token, setToken] = useState(() => sessionStorage.getItem("nib_token"));
   const [user, setUser] = useState(() => {
-    const raw = sessionStorage.getItem("blueb_user");
+    const raw = sessionStorage.getItem("nib_user");
     try { return raw ? JSON.parse(raw) : null; } catch { return null; }
   });
 
-  const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem("blueb_token")));
+  const [loading, setLoading] = useState(() => Boolean(sessionStorage.getItem("nib_token")));
 
   const login = useCallback(async (username, password) => {
     const data = await api.login(username, password);
     setToken(data.token);
     setUser(data.user);
-    sessionStorage.setItem("blueb_token", data.token);
-    sessionStorage.setItem("blueb_user", JSON.stringify(data.user));
+    sessionStorage.setItem("nib_token", data.token);
+    sessionStorage.setItem("nib_user", JSON.stringify(data.user));
     return data;
   }, []);
 
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    sessionStorage.removeItem("blueb_token");
-    sessionStorage.removeItem("blueb_user");
+    sessionStorage.removeItem("nib_token");
+    sessionStorage.removeItem("nib_user");
   }, []);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
     const refresh = () => api.me(token).then(({ user: current }) => {
       if (!cancelled) {
         setUser(current);
-        sessionStorage.setItem("blueb_user", JSON.stringify(current));
+        sessionStorage.setItem("nib_user", JSON.stringify(current));
       }
     }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
     refresh();
@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback((partial) => {
     setUser((prev) => {
       const next = { ...prev, ...partial };
-      sessionStorage.setItem("blueb_user", JSON.stringify(next));
+      sessionStorage.setItem("nib_user", JSON.stringify(next));
       return next;
     });
   }, []);

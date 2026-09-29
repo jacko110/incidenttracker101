@@ -26,14 +26,14 @@ feature in this app did.
 ### 1. Create the database and apply the schema
 
 ```bash
-createdb blueb
-psql -d blueb -f postgres/schema.sql
+createdb nib
+psql -d nib -f postgres/schema.sql
 ```
 
 Or against a remote/managed Postgres:
 
 ```bash
-psql "postgres://user:pass@host:5432/blueb" -f postgres/schema.sql
+psql "postgres://user:pass@host:5432/nib" -f postgres/schema.sql
 ```
 
 ### 2. Install the Postgres driver
@@ -49,10 +49,10 @@ run this migration.)
 ### 3. Run the migration
 
 ```bash
-DATABASE_URL=postgres://user:pass@host:5432/blueb node postgres/migrate-data.js
+DATABASE_URL=postgres://user:pass@host:5432/nib node postgres/migrate-data.js
 ```
 
-This reads every row out of `backend/blueb.db` and inserts it into Postgres,
+This reads every row out of `backend/nib.db` and inserts it into Postgres,
 preserving original IDs (so foreign keys stay valid) and converting:
 - SQLite's 0/1 integers → real Postgres `BOOLEAN`
 - SQLite's TEXT-encoded JSON → real Postgres `JSONB`

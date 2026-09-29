@@ -2,6 +2,7 @@ const express = require("express");
 const db = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { sendEmail } = require("../services/email");
+const { DUE_SOON_HOURS } = require("../services/deadlines");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -46,8 +47,8 @@ function notify(userId, caseId, message) {
     // delivery. sendEmail() logs its own success/failure to email_log.
     sendEmail({
       to: recipient.email,
-      subject: `BlueB: ${message}`,
-      text: `Hi ${recipient.username},\n\n${message}${caseLine}\n\n— BlueB Incident Tracking`,
+      subject: `Nib: ${message}`,
+      text: `Hi ${recipient.username},\n\n${message}${caseLine}\n\n— Nib Incident Tracking`,
     }).catch(() => {});
   }
 }
@@ -108,7 +109,7 @@ function saveIocsTable(caseId, iocs) {
 
 // GET /api/cases?status=&archived=&assignedToMe=1&q=&page=&pageSize=
 router.get("/", (req, res) => {
-  const { status, archived, assignedToMe, q, page, pageSize } = req.query;
+  const { status, archived, assignedToMe, q, page, pageSize, due } = req.query;
 
   const where = ["archived = ?"];
   const params = [archived === "1" ? 1 : 0];
@@ -120,6 +121,11 @@ router.get("/", (req, res) => {
   if (assignedToMe === "1") {
     where.push("assigned_to = ?");
     params.push(req.user.id);
+  }
+  if (due === "overdue") {
+    where.push("due_at IS NOT NULL AND datetime(due_at) < datetime('now') AND status NOT IN ('Completed', 'Rejected')");
+  } else if (due === "upcoming") {
+    where.push("due_at IS NOT NULL AND datetime(due_at) >= datetime('now') AND datetime(due_at) <= datetime('now', '+" + DUE_SOON_HOURS + " hours') AND status NOT IN ('Completed', 'Rejected')");
   }
   if (q && q.trim()) {
     where.push("(title LIKE ? OR attack_type LIKE ? OR origin_country LIKE ? OR asset_name LIKE ?)");
@@ -134,8 +140,9 @@ router.get("/", (req, res) => {
   const size = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 25));
   const offset = (p - 1) * size;
 
+  const orderBy = ["overdue", "upcoming"].includes(due) ? "datetime(due_at) ASC" : "created_at DESC";
   const rows = db
-    .prepare(`SELECT * FROM cases ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+    .prepare(`SELECT * FROM cases ${whereClause} ORDER BY ${orderBy} LIMIT ? OFFSET ?`)
     .all(...params, size, offset);
 
   res.json({
@@ -200,6 +207,24 @@ router.get("/stats", (req, res) => {
     )
     .all(...dateParams);
   const originTotal = origins.reduce((a, o) => a + o.c, 0) || 1;
+  const deadlineCases = (condition, limit) => db.prepare(
+    `SELECT c.id, c.title, c.status, c.severity, c.due_at, c.assigned_to,
+            u.username AS assignee
+     FROM cases c LEFT JOIN users u ON u.id = c.assigned_to
+     WHERE c.archived = 0 AND c.due_at IS NOT NULL
+       AND c.status NOT IN ('Completed', 'Rejected') AND ${condition}
+     ORDER BY datetime(c.due_at) ASC LIMIT ?`
+  ).all(limit);
+  const overdueCount = db.prepare(
+    "SELECT COUNT(*) c FROM cases WHERE archived = 0 AND due_at IS NOT NULL AND datetime(due_at) < datetime('now') AND status NOT IN ('Completed', 'Rejected')"
+  ).get().c;
+  const upcomingCount = db.prepare(
+    `SELECT COUNT(*) c FROM cases WHERE archived = 0 AND due_at IS NOT NULL
+     AND datetime(due_at) >= datetime('now') AND datetime(due_at) <= datetime('now', '+${DUE_SOON_HOURS} hours')
+     AND status NOT IN ('Completed', 'Rejected')`
+  ).get().c;
+  const overdueCases = deadlineCases("datetime(c.due_at) < datetime('now')", 5);
+  const upcomingCases = deadlineCases(`datetime(c.due_at) >= datetime('now') AND datetime(c.due_at) <= datetime('now', '+${DUE_SOON_HOURS} hours')`, 5);
 
   res.json({
     total,
@@ -212,6 +237,7 @@ router.get("/stats", (req, res) => {
       attacks: o.c,
       pct: Math.round((o.c / originTotal) * 100),
     })),
+    deadlines: { overdue: overdueCount, upcoming: upcomingCount, overdueCases, upcomingCases },
   });
 });
 
@@ -279,37 +305,50 @@ router.post("/", (req, res) => {
     recommendations,
     iocs,
   } = req.body || {};
-  if (!title) return res.status(400).json({ error: "Title is required" });
+  if (typeof title !== "string" || !title.trim()) {
+    return res.status(400).json({ error: "Title is required" });
+  }
+  if (iocs !== undefined && (!Array.isArray(iocs) || iocs.some(ioc =>
+    !ioc || typeof ioc !== "object" || Array.isArray(ioc) ||
+    ["type", "value", "threatIntelligence", "description"].some(key => ioc[key] != null && typeof ioc[key] !== "string") ||
+    ["count", "percentage"].some(key => ioc[key] != null && !Number.isFinite(Number(ioc[key]))) ||
+    ["images", "documents"].some(key => ioc[key] != null && !Array.isArray(ioc[key]))
+  ))) {
+    return res.status(400).json({ error: "IOCs must be an array of valid indicator records" });
+  }
 
-  const info = db
-    .prepare(
-      `INSERT INTO cases (
-        title, status, severity, attack_type, origin_country, assigned_to,
-        source_ip, destination_ip, incident_datetime, asset_name, shift,
-        http_status, summary, impact, recommendations, iocs
-      ) VALUES (?, 'Attempt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      title,
-      severity || "N/A",
-      attack_type || null,
-      origin_country || null,
-      req.user.id,
-      source_ip ? JSON.stringify(source_ip) : null,
-      destination_ip ? JSON.stringify(destination_ip) : null,
-      incident_datetime || null,
-      asset_name || null,
-      shift || null,
-      http_status ? JSON.stringify(http_status) : null,
-      summary || null,
-      impact || null,
-      recommendations || null,
-      iocs ? JSON.stringify(iocs) : null
-    );
+  const caseId = db.transaction(() => {
+    const info = db
+      .prepare(
+        `INSERT INTO cases (
+          title, status, severity, attack_type, origin_country, assigned_to,
+          source_ip, destination_ip, incident_datetime, asset_name, shift,
+          http_status, summary, impact, recommendations, iocs
+        ) VALUES (?, 'Attempt', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        title,
+        severity || "N/A",
+        attack_type || null,
+        origin_country || null,
+        req.user.id,
+        source_ip ? JSON.stringify(source_ip) : null,
+        destination_ip ? JSON.stringify(destination_ip) : null,
+        incident_datetime || null,
+        asset_name || null,
+        shift || null,
+        http_status ? JSON.stringify(http_status) : null,
+        summary || null,
+        impact || null,
+        recommendations || null,
+        iocs ? JSON.stringify(iocs) : null
+      );
 
-  const caseId = info.lastInsertRowid;
-  if (iocs) saveIocsTable(caseId, iocs);
-  logHistory(caseId, req.user.id, "created", `Case created by ${req.user.username}`);
+    const caseId = info.lastInsertRowid;
+    if (iocs) saveIocsTable(caseId, iocs);
+    logHistory(caseId, req.user.id, "created", `Case created by ${req.user.username}`);
+    return caseId;
+  })();
 
   if ((severity || "").toLowerCase() === "critical") {
     const admins = db
@@ -330,7 +369,18 @@ router.patch("/:id", (req, res) => {
   const existing = db.prepare("SELECT * FROM cases WHERE id = ?").get(req.params.id);
   if (!existing) return res.status(404).json({ error: "Case not found" });
 
-  const { status, severity, archived } = req.body || {};
+  const { status, severity, archived, due_at } = req.body || {};
+  if (due_at !== undefined && req.user.role !== "SOC_ADMIN") {
+    return res.status(403).json({ error: "Only SOC Admin can set or clear case deadlines" });
+  }
+  let normalizedDueAt;
+  if (due_at !== undefined && due_at !== null) {
+    const hasTimezone = typeof due_at === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(due_at);
+    if (!hasTimezone || !Number.isFinite(Date.parse(due_at))) {
+      return res.status(400).json({ error: "due_at must be an ISO date-time with a timezone, or null" });
+    }
+    normalizedDueAt = new Date(due_at).toISOString();
+  }
   if (status === "Rejected") {
     return res.status(400).json({ error: "Use the dedicated reject action to reject a case" });
   }
@@ -346,15 +396,25 @@ router.patch("/:id", (req, res) => {
       status = COALESCE(?, status),
       severity = COALESCE(?, severity),
       archived = COALESCE(?, archived),
+      due_at = CASE WHEN ? THEN ? ELSE due_at END,
+      due_reminded_at = CASE WHEN ? THEN NULL ELSE due_reminded_at END,
       updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`
-  ).run(status ?? null, severity ?? null, archived === undefined ? null : archived ? 1 : 0, req.params.id);
+  ).run(status ?? null, severity ?? null, archived === undefined ? null : archived ? 1 : 0,
+    due_at !== undefined ? 1 : 0, due_at === null ? null : normalizedDueAt,
+    due_at !== undefined && (due_at === null || normalizedDueAt !== existing.due_at) ? 1 : 0,
+    req.params.id);
 
   if (status && status !== existing.status) {
     logHistory(req.params.id, req.user.id, "status_changed", `Status changed from "${existing.status}" to "${status}"`);
   }
   if (severity && severity !== existing.severity) {
     logHistory(req.params.id, req.user.id, "edited", `Severity changed from "${existing.severity}" to "${severity}"`);
+  }
+  if (due_at !== undefined && (due_at === null ? existing.due_at !== null : normalizedDueAt !== existing.due_at)) {
+    logHistory(req.params.id, req.user.id, "deadline_changed", due_at === null
+      ? "Response deadline cleared"
+      : `Response deadline set to ${normalizedDueAt}`);
   }
   if (archived !== undefined) {
     logHistory(req.params.id, req.user.id, archived ? "archived" : "restored", archived ? "Case archived" : "Case restored from archive");
@@ -436,7 +496,7 @@ router.post("/:id/assign", requireRole("SOC_ADMIN"), (req, res) => {
 
   const { userId } = req.body || {};
   const target = userId ? db.prepare("SELECT * FROM users WHERE id = ?").get(userId) : null;
-  if (userId && !target) return res.status(400).json({ error: "Assignee not found" });
+  if (userId && (!target || !target.active)) return res.status(400).json({ error: "Assignee must be an active user" });
 
   db.prepare("UPDATE cases SET assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
     userId || null,
@@ -458,7 +518,10 @@ router.post("/:id/assign", requireRole("SOC_ADMIN"), (req, res) => {
 // POST /api/cases/:id/notes
 router.post("/:id/notes", (req, res) => {
   const { body } = req.body || {};
-  if (!body) return res.status(400).json({ error: "Note body required" });
+  if (typeof body !== "string" || !body.trim()) return res.status(400).json({ error: "Note body required" });
+  if (!db.prepare("SELECT id FROM cases WHERE id = ?").get(req.params.id)) {
+    return res.status(404).json({ error: "Case not found" });
+  }
   const info = db
     .prepare("INSERT INTO case_notes (case_id, author_id, body) VALUES (?, ?, ?)")
     .run(req.params.id, req.user.id, body);

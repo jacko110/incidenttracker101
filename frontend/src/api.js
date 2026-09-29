@@ -1,5 +1,5 @@
 const BASE = "/api";
-export const SESSION_INVALID = "blueb:session-invalid";
+export const SESSION_INVALID = "nib:session-invalid";
 function checkSession(res, data, token) {
   if (token && (res.status === 401 || data.code === "ACCOUNT_DEACTIVATED")) {
     window.dispatchEvent(new CustomEvent(SESSION_INVALID, { detail: { token } }));
@@ -36,12 +36,13 @@ export const api = {
   },
 
   // Returns { data, pagination: { page, pageSize, total, totalPages } }
-  cases: (token, { status, archived, assignedToMe, q, page, pageSize } = {}) => {
+  cases: (token, { status, archived, assignedToMe, q, due, page, pageSize } = {}) => {
     const params = new URLSearchParams();
     if (status) params.set("status", status);
     if (archived) params.set("archived", "1");
     if (assignedToMe) params.set("assignedToMe", "1");
     if (q) params.set("q", q);
+    if (due) params.set("due", due);
     if (page) params.set("page", page);
     if (pageSize) params.set("pageSize", pageSize);
     const qs = params.toString();

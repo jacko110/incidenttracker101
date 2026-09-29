@@ -1,7 +1,7 @@
 const Database = require("better-sqlite3");
 const path = require("path");
 
-const db = new Database(process.env.DATABASE_PATH || path.join(__dirname, "blueb.db"));
+const db = new Database(process.env.DATABASE_PATH || path.join(__dirname, "nib.db"));
 db.pragma("journal_mode = WAL");
 
 db.exec(`
@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS cases (
   attack_type TEXT,
   origin_country TEXT,
   assigned_to INTEGER,
+  due_at TEXT,
+  due_reminded_at TEXT,
   rejected_by TEXT,                       -- 'SOC Admin' | 'IR Analyst' | NULL
   archived INTEGER DEFAULT 0,
   source_ip TEXT,           -- JSON array of strings
@@ -128,9 +130,11 @@ CREATE TABLE IF NOT EXISTS case_links (
 );
 `);
 
-// Safe migration in case an older blueb.db already exists without these columns
+// Safe migration in case an older nib.db already exists without these columns
 const newColumns = [
   "rejected_by TEXT",
+  "due_at TEXT",
+  "due_reminded_at TEXT",
   "source_ip TEXT",
   "destination_ip TEXT",
   "incident_datetime TEXT",

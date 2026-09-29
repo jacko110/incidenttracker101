@@ -39,7 +39,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="font-stamp text-2xl text-paper">
-            NI<span className="text-thread">B</span>
+            Ni<span className="text-thread">b</span>
           </div>
           <div className="font-mono text-[10px] tracking-widest uppercase text-faint mt-1.5">
             Incident tracking system

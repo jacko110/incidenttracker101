@@ -20,7 +20,7 @@ const transporter = isConfigured
     })
   : nodemailer.createTransport({ jsonTransport: true });
 
-const FROM = process.env.SMTP_FROM || "BlueB Alerts <alerts@blueb.local>";
+const FROM = process.env.SMTP_FROM || "Nib Alerts <alerts@nib.local>";
 
 function logAttempt({ recipient, subject, body, status, error }) {
   db.prepare(

@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
+  },
+  "name": "nib",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "verify": "npm --prefix backend test && npm --prefix frontend test && npm --prefix frontend run build && npm run test:e2e"
+  }
+}

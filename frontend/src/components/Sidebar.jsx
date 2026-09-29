@@ -22,7 +22,7 @@ export default function Sidebar({ open, counts }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const isCaseActive = (status) => location.pathname === "/cases" && params.get("mine") !== "1" && (params.get("status") || null) === status;
+  const isCaseActive = (status) => location.pathname === "/cases" && params.get("mine") !== "1" && !params.has("due") && (params.get("status") || null) === status;
   const [caseListOpen, setCaseListOpen] = useState(true);
   const initials = (user?.username || "?").slice(0, 2).toUpperCase();
 
@@ -34,7 +34,7 @@ export default function Sidebar({ open, counts }) {
     >
       <div className="px-5 py-5">
         <div className="flex items-center gap-1 font-stamp text-lg text-paper">
-          NI<span className="text-thread">B</span>
+          Ni<span className="text-thread">b</span>
         </div>
         <div className="font-mono text-[10px] tracking-widest uppercase text-faint mt-1">Incident tracking</div>
       </div>
@@ -91,6 +91,8 @@ export default function Sidebar({ open, counts }) {
         </div>
 
         <SideLink to="/cases?mine=1" icon={UserCheck} label="My cases" />
+        <SideLink to="/cases?due=overdue" icon={AlertTriangle} label="Overdue" />
+        <SideLink to="/cases?due=upcoming" icon={Clock} label="Due soon" />
         <SideLink to="/iocs" icon={Search} label="Search IOCs" />
         <SideLink to="/archive" icon={Archive} label="Archive" />
         <SideLink to="/chat" icon={MessageCircle} label="Chat" />
@@ -114,8 +116,11 @@ export default function Sidebar({ open, counts }) {
 
 function SideLink({ to, icon: Icon, label, end }) {
   const location = useLocation();
-  if (to === "/cases?mine=1") {
-    const active = location.pathname === "/cases" && new URLSearchParams(location.search).get("mine") === "1";
+  if (to.startsWith("/cases?")) {
+    const params = new URLSearchParams(location.search);
+    const target = new URLSearchParams(to.split("?")[1]);
+    const key = [...target.keys()][0];
+    const active = location.pathname === "/cases" && params.get(key) === target.get(key);
     return <Link to={to} aria-current={active ? "page" : undefined}
       className={`w-full flex items-center gap-3 px-3 py-2 rounded mb-0.5 text-left transition-colors border-l-2 ${active ? "bg-panel2 text-paper border-thread" : "text-muted hover:bg-panel2 hover:text-paper border-transparent"}`}>
       <Icon size={16} /><span className="flex-1 truncate">{label}</span>

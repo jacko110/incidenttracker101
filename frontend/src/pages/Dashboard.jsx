@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar,
@@ -89,7 +90,13 @@ export default function Dashboard() {
   const [rangeOpen, setRangeOpen] = useState(false);
 
   useEffect(() => {
-    api.stats(token, rangeToDates(range)).then(setStats).catch((e) => setError(e.message));
+    let active = true;
+    const load = () => api.stats(token, rangeToDates(range))
+      .then((data) => { if (active) { setStats(data); setError(""); } })
+      .catch((e) => { if (active) setError(e.message); });
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => { active = false; clearInterval(timer); };
   }, [token, range]);
 
   if (error) return <div className="text-thread text-sm p-4 font-mono">{error}</div>;
@@ -167,6 +174,33 @@ export default function Dashboard() {
         {statCards.map((c) => (
           <StatCard key={c.label} {...c} />
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Panel title={`Overdue response deadlines (${stats.deadlines?.overdue ?? 0})`} right={<Link to="/cases?due=overdue" className="text-xs text-cyan hover:underline">View all</Link>}>
+          {(stats.deadlines?.overdueCases || []).length ? (
+            <div className="space-y-2">
+              {stats.deadlines.overdueCases.map((item) => (
+                <Link key={item.id} to={`/cases/${item.id}`} className="flex items-center justify-between gap-3 rounded bg-panel2 px-3 py-2 hover:bg-line">
+                  <span className="min-w-0"><span className="block text-sm text-paper truncate">#{item.id} · {item.title}</span><span className="text-[11px] text-faint">{item.assignee || "Unassigned"} · {item.status}</span></span>
+                  <span className="shrink-0 text-xs text-thread">{new Date(item.due_at).toLocaleString()}</span>
+                </Link>
+              ))}
+            </div>
+          ) : <p className="text-sm text-faint">No overdue cases.</p>}
+        </Panel>
+        <Panel title={`Due within 24 hours (${stats.deadlines?.upcoming ?? 0})`} right={<Link to="/cases?due=upcoming" className="text-xs text-cyan hover:underline">View all</Link>}>
+          {(stats.deadlines?.upcomingCases || []).length ? (
+            <div className="space-y-2">
+              {stats.deadlines.upcomingCases.map((item) => (
+                <Link key={item.id} to={`/cases/${item.id}`} className="flex items-center justify-between gap-3 rounded bg-panel2 px-3 py-2 hover:bg-line">
+                  <span className="min-w-0"><span className="block text-sm text-paper truncate">#{item.id} · {item.title}</span><span className="text-[11px] text-faint">{item.assignee || "Unassigned"} · {item.status}</span></span>
+                  <span className="shrink-0 text-xs text-amber">{new Date(item.due_at).toLocaleString()}</span>
+                </Link>
+              ))}
+            </div>
+          ) : <p className="text-sm text-faint">No deadlines in the next 24 hours.</p>}
+        </Panel>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

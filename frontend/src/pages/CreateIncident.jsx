@@ -52,10 +52,10 @@ function Select({ value, onChange, options, placeholder }) {
 
 function Stepper({ step }) {
   return (
-    <div className="flex items-center px-6 py-6">
+    <div className="flex items-center px-3 sm:px-6 py-6">
       {STEPS.map((s, i) => (
         <React.Fragment key={s.n}>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
                 step === s.n
@@ -67,11 +67,11 @@ function Stepper({ step }) {
             >
               {step > s.n ? <Check size={13} /> : s.n}
             </div>
-            <span className={`font-display text-sm ${step === s.n ? "text-paper font-semibold" : "text-faint"}`}>
+            <span className={`font-display text-xs sm:text-sm ${step === s.n ? "text-paper font-semibold" : "text-faint"}`}>
               {s.label}
             </span>
           </div>
-          {i < STEPS.length - 1 && <div className="flex-1 h-px bg-line mx-4" />}
+          {i < STEPS.length - 1 && <div className="flex-1 min-w-2 h-px bg-line mx-2 sm:mx-4" />}
         </React.Fragment>
       ))}
     </div>

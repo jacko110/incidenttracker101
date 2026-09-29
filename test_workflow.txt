@@ -1,4 +1,4 @@
-BLUEB BROWSER WORKFLOW CHECKLIST
+NIB BROWSER WORKFLOW CHECKLIST
 ================================
 
 Purpose
@@ -58,8 +58,10 @@ Create an incident with an attachment
 [ ] 10. Continue to Review and inspect the incident and IOC details. Submit.
 [ ] 11. Confirm the new case detail page opens and displays the incident data.
 [ ] 12. Open the attachment from the case. Confirm it loads while signed in.
-       Copy its URL into a private/incognito window without signing in; confirm
-       the file is not accessible there.
+       Remove the ?token=... query string from its URL, then open that URL in
+       a private/incognito window; confirm access is denied. A copied URL that
+       still contains a valid token grants access, even in incognito. Treat
+       token-bearing URLs as credentials and do not share them.
 [ ] 13. Try submitting a second incident with a required field missing. Confirm
        the form explains what needs to be completed and does not create a case.
 
@@ -127,3 +129,91 @@ Issues to report (include step number, role, expected behavior, actual behavior,
 and any visible error text):
 
 
+
+Response deadlines
+------------------
+[ ] 31. As admin, open an active case and set a deadline more than 24 hours in
+       the future. Confirm it is saved and visible to analyst roles.
+[ ] 32. As zemenu, try to set or clear the same deadline. Confirm the action is
+       denied and the saved deadline remains unchanged.
+[ ] 33. As admin, set a deadline within the next 24 hours on a case assigned to
+       an active user. Confirm it appears under Due soon on the dashboard and
+       in the Due soon case-list filter.
+[ ] 34. Wait for the next hourly reminder check (or set a near-term deadline
+       and restart the development backend). Confirm the assignee gets one
+       in-app reminder, and an email-log entry if the assignee has opted into
+       email notifications with an address configured.
+[ ] 35. Move the deadline into the past. Confirm the open case appears under
+       Overdue on the dashboard and in the Overdue case-list filter.
+[ ] 36. Complete or reject a case with a deadline. Confirm it disappears from
+       the overdue and due-soon workload views.
+[ ] 37. Change a deadline after a reminder was sent. Confirm the reminder
+       status resets and the assignee can receive one reminder for the new
+       deadline.
+
+Automated verification (2026-09-28)
+-----------------------------------
+Run from the project root:
+  npm --prefix backend test
+  npm --prefix frontend test
+  npm --prefix frontend run build
+
+The backend workflow suite uses real HTTP requests, an in-memory SQLite
+database, temporary uploaded files and offline email logging. It never seeds
+or edits the development database and does not send real email.
+
+Covered: login and role enforcement; incident/IOC creation, search, edits,
+notes and history; assignment and account deactivation; notification ownership;
+rejection, archive and restore; pagination and dashboard date filters; deadline
+permissions and workload; reminder deduplication, overdue catch-up and email
+opt-out; bidirectional case links; multipart attachment contents, access and
+limits; chat; admin user creation/password reset; critical-incident alerts;
+and transaction rollback when audit insertion fails.
+
+Frontend checks cover session invalidation, preserving sessions on permission
+or network failures, retry recovery, and paginated/filter-preserving API calls.
+
+The API checks alone do NOT mark the browser checklist above PASS. Reminder
+tests invoke the real service directly rather than waiting an hour.
+
+Browser regression suite (Chromium)
+-----------------------------------
+From the project root:
+  npm install
+  npx playwright install chromium
+  npm run test:e2e
+
+Or run all automated verification:
+  npm run verify
+
+Browser coverage: Nib branding/title, login/refresh/logout, protected admin
+routes, required incident fields, full incident wizard with uploaded evidence,
+attachment contents, notes, status changes, analyst action visibility, search
+persistence after reload, admin assignment/deadline persistence, due-soon list,
+mobile navigation closing, and case-list/incident-form viewport width at 390px.
+
+The suite uses separate temporary data and test ports 4015/5175. It does not
+modify development records or send email. Screenshots/traces are retained on
+failure in test-results/. Other browsers, the remaining manual scenarios,
+external-provider SMTP delivery and hourly wall-clock timing are not covered
+by these browser tests. Process restarts are covered separately below.
+
+Email and scheduler verification (2026-09-29)
+--------------------------------------------
+Run: npm --prefix backend test
+Focused run: node --test backend/test/delivery-restart.test.js
+
+PASS - Real SMTP transport delivers reminder content to a loopback receiver.
+PASS - SMTP 550 rejection is logged as failed; in-app notification is retained.
+PASS - Reminder marker survives an actual backend process restart.
+PASS - Restart and repeated scheduler ticks do not duplicate notifications/mail.
+PASS - Startup catches a case that became overdue while the backend was offline.
+PASS - Recurring timer detects a newly eligible deadline without a restart.
+PASS - Scheduler continues after SMTP rejection without unintended retries.
+PASS - Production timer registration is one hour (3,600,000 ms).
+
+The interval is accelerated only in the test process; no hour-long timing test
+was performed. Tests use temporary database files and local SMTP, with no real
+recipient or development data affected. External inbox receipt, provider
+credentials and TLS remain deployment-specific checks, not claimed as verified.
+Email retry/queueing is not implemented; failed sends are logged for review.

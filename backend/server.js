@@ -28,8 +28,12 @@ app.use("/api/iocs", iocRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`BlueB backend running on http://localhost:${PORT}`);
+  console.log(`Nib backend running on http://localhost:${PORT}`);
   if (seedDemo) console.log("Demo accounts enabled for development.");
+  const { sendDueReminders } = require("./services/deadlines");
+  sendDueReminders();
+  const reminderTimer = setInterval(sendDueReminders, 60 * 60 * 1000);
+  reminderTimer.unref();
   const { isConfigured } = require("./services/email");
   console.log(
     isConfigured

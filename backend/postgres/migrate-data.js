@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Migrates all data from the local SQLite database (backend/blueb.db) into
+ * Migrates all data from the local SQLite database (backend/nib.db) into
  * a Postgres database that already has postgres/schema.sql applied.
  *
  * This does NOT touch application code — the Express routes still talk to
@@ -9,9 +9,9 @@
  * porting the routes, or to stand up a Postgres replica for reporting.
  *
  * Usage:
- *   1. createdb blueb   (or your own db name)
- *   2. psql -d blueb -f postgres/schema.sql
- *   3. DATABASE_URL=postgres://user:pass@host:5432/blueb node postgres/migrate-data.js
+ *   1. createdb nib   (or your own db name)
+ *   2. psql -d nib -f postgres/schema.sql
+ *   3. DATABASE_URL=postgres://user:pass@host:5432/nib node postgres/migrate-data.js
  *
  * Safe to re-run: it TRUNCATEs the target tables first (in FK-safe order)
  * before inserting, so partial/failed runs don't leave duplicate data.
@@ -21,12 +21,12 @@ const path = require("path");
 const Database = require("better-sqlite3");
 const { Client } = require("pg");
 
-const SQLITE_PATH = process.env.SQLITE_PATH || path.join(__dirname, "..", "blueb.db");
+const SQLITE_PATH = process.env.SQLITE_PATH || path.join(__dirname, "..", "nib.db");
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   console.error("Set DATABASE_URL to your Postgres connection string, e.g.");
-  console.error("  DATABASE_URL=postgres://user:pass@localhost:5432/blueb node postgres/migrate-data.js");
+  console.error("  DATABASE_URL=postgres://user:pass@localhost:5432/nib node postgres/migrate-data.js");
   process.exit(1);
 }
 

@@ -10,3 +10,6 @@ dist/
 !**/.env.example
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+test-results/
+playwright-report/

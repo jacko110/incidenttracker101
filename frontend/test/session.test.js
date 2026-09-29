@@ -33,3 +33,41 @@ test('authenticated expiry and deactivation invalidate sessions, ordinary 403 an
     globalThis.CustomEvent = originalEvent;
   }
 });
+
+test('network and server failures preserve the session and a later retry succeeds', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  let events = 0;
+  globalThis.window = { dispatchEvent: () => events++ };
+  try {
+    globalThis.fetch = async () => { throw new TypeError('Network unavailable'); };
+    await assert.rejects(api.cases('valid-token'), /Network unavailable/);
+    globalThis.fetch = async () => ({ status: 503, ok: false, json: async () => { throw new SyntaxError('HTML error page'); } });
+    await assert.rejects(api.cases('valid-token'), /Request failed/);
+    globalThis.fetch = async () => ({ status: 200, ok: true, json: async () => ({ data: [{ id: 1 }] }) });
+    assert.deepEqual((await api.cases('valid-token')).data, [{ id: 1 }]);
+    assert.equal(events, 0);
+  } finally { globalThis.fetch = originalFetch; globalThis.window = originalWindow; }
+});
+
+test('case filters survive URL encoding and allCases retrieves every page', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  try {
+    globalThis.fetch = async (url, options) => {
+      const query = new URL(url, 'http://test.local').searchParams;
+      calls.push({ query, options });
+      const page = Number(query.get('page'));
+      return { status: 200, ok: true, json: async () => ({ data: [{ id: page }], pagination: { totalPages: 3 } }) };
+    };
+    const result = await api.allCases('valid-token', { q: 'mail & proxy', due: 'overdue', assignedToMe: true, status: 'In Progress' });
+    assert.deepEqual(result.data.map(item => item.id), [1, 2, 3]);
+    for (const { query, options } of calls) {
+      assert.equal(query.get('q'), 'mail & proxy');
+      assert.equal(query.get('due'), 'overdue');
+      assert.equal(query.get('assignedToMe'), '1');
+      assert.equal(query.get('status'), 'In Progress');
+      assert.equal(options.headers.Authorization, 'Bearer valid-token');
+    }
+  } finally { globalThis.fetch = originalFetch; }
+});

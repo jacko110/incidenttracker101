@@ -13,6 +13,7 @@ export default function CaseList() {
   const [params, setParams] = useSearchParams();
   const status = params.get("status");
   const mineOnly = params.get("mine") === "1";
+  const due = params.get("due");
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
@@ -25,9 +26,11 @@ export default function CaseList() {
 
   useEffect(() => {
     const query = params.get("q") || "";
-    setSearch(query);
-    setDebouncedSearch(query);
-    setPage(1);
+    if (query !== search.trim()) {
+      setSearch(query);
+      setDebouncedSearch(query);
+      setPage(1);
+    }
   }, [params]);
 
   useEffect(() => setPage(1), [status, mineOnly, debouncedSearch]);
@@ -42,7 +45,7 @@ export default function CaseList() {
     setLoading(true);
     setError("");
     api
-      .cases(token, { status, assignedToMe: mineOnly, q: debouncedSearch, page, pageSize: PAGE_SIZE })
+      .cases(token, { status, assignedToMe: mineOnly, q: debouncedSearch, due, page, pageSize: PAGE_SIZE })
       .then((res) => {
         if (!active) return;
         setCases(res.data);
@@ -51,9 +54,9 @@ export default function CaseList() {
       .catch((e) => { if (active) setError(e.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token, status, mineOnly, debouncedSearch, page]);
+  }, [token, status, mineOnly, due, debouncedSearch, page]);
 
-  const title = mineOnly ? "My cases" : status ? `Cases · ${status}` : "All cases";
+  const title = due === "overdue" ? "Overdue cases" : due === "upcoming" ? "Due within 24 hours" : mineOnly ? "My cases" : status ? `Cases · ${status}` : "All cases";
 
   return (
     <Panel title={title}>
@@ -95,6 +98,7 @@ export default function CaseList() {
                   <th className="py-2 pr-4">Origin</th>
                   <th className="py-2 pr-4">Status</th>
                   <th className="py-2 pr-4">Logged</th>
+                  <th className="py-2 pr-4">Due</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,6 +114,7 @@ export default function CaseList() {
                     <td className="py-2 pr-4 text-muted">{c.origin_country || "—"}</td>
                     <td className="py-2 pr-4"><StatusPill status={c.status} /></td>
                     <td className="py-2 pr-4 font-mono text-[11px] text-faint">{c.created_at?.slice(0, 10)}</td>
+                    <td className={`py-2 pr-4 font-mono text-[11px] ${c.due_at && new Date(c.due_at) < new Date() && !["Completed", "Rejected"].includes(c.status) ? "text-thread" : "text-faint"}`}>{c.due_at ? new Date(c.due_at).toLocaleString() : "—"}</td>
                   </tr>
                 ))}
               </tbody>

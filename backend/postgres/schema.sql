@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS cases (
   attack_type TEXT,
   origin_country TEXT,
   assigned_to INTEGER REFERENCES users(id),
+  due_at TIMESTAMPTZ,
+  due_reminded_at TIMESTAMPTZ,
   rejected_by TEXT,                       -- 'SOC Admin' | 'IR Analyst' | NULL
   archived BOOLEAN DEFAULT FALSE,
   source_ip JSONB,
@@ -122,6 +124,7 @@ CREATE TABLE IF NOT EXISTS case_links (
 -- shared Postgres instance under real concurrent load benefits from them).
 CREATE INDEX IF NOT EXISTS idx_cases_status ON cases(status);
 CREATE INDEX IF NOT EXISTS idx_cases_assigned_to ON cases(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_cases_due_at ON cases(due_at) WHERE due_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_cases_archived ON cases(archived);
 CREATE INDEX IF NOT EXISTS idx_iocs_case_id ON iocs(case_id);
 CREATE INDEX IF NOT EXISTS idx_iocs_value ON iocs(value);

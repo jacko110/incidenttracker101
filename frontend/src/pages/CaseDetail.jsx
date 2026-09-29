@@ -19,6 +19,7 @@ const HISTORY_LABELS = {
   edited: "Edited",
   archived: "Archived",
   restored: "Restored",
+  deadline_changed: "Deadline changed",
 };
 
 export default function CaseDetail() {
@@ -36,6 +37,8 @@ export default function CaseDetail() {
 
   const [users, setUsers] = useState([]);
   const [assigning, setAssigning] = useState(false);
+  const [deadlineInput, setDeadlineInput] = useState("");
+  const [savingDeadline, setSavingDeadline] = useState(false);
 
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkTargetId, setLinkTargetId] = useState("");
@@ -47,6 +50,11 @@ export default function CaseDetail() {
   }
 
   useEffect(load, [token, id]);
+  useEffect(() => {
+    if (!item?.due_at) { setDeadlineInput(""); return; }
+    const date = new Date(item.due_at);
+    setDeadlineInput(Number.isNaN(date.getTime()) ? "" : new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+  }, [item?.due_at]);
   useEffect(() => {
     if (canAssign(user.role)) api.listUsers(token).then(setUsers).catch(() => {});
   }, [token, user.role]);
@@ -117,6 +125,33 @@ export default function CaseDetail() {
       setError(e.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveDeadline(e) {
+    e.preventDefault();
+    setSavingDeadline(true);
+    setError("");
+    try {
+      await api.updateCase(token, id, { due_at: deadlineInput ? new Date(deadlineInput).toISOString() : null });
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSavingDeadline(false);
+    }
+  }
+
+  async function clearDeadline() {
+    setSavingDeadline(true);
+    setError("");
+    try {
+      await api.updateCase(token, id, { due_at: null });
+      load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSavingDeadline(false);
     }
   }
 
@@ -324,6 +359,28 @@ export default function CaseDetail() {
               {item.assignee ? `${item.assignee.username} (${item.assignee.role})` : "Unassigned"}
             </div>
           )}
+        </div>
+
+        <div className="mt-5 border-t border-line pt-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-2">Response deadline</div>
+          {canAssign(user.role) ? (
+            <form onSubmit={saveDeadline} className="flex flex-wrap items-center gap-2">
+              <input
+                aria-label="Response deadline"
+                type="datetime-local"
+                value={deadlineInput}
+                onChange={(e) => setDeadlineInput(e.target.value)}
+                className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+              />
+              <button type="submit" disabled={savingDeadline} className="text-xs bg-cyan text-ink font-semibold px-3 py-2 rounded disabled:opacity-50">
+                {savingDeadline ? "Saving…" : "Save deadline"}
+              </button>
+              {item.due_at && <button type="button" disabled={savingDeadline} onClick={clearDeadline} className="text-xs text-muted hover:text-paper px-2 py-2 disabled:opacity-50">Clear</button>}
+            </form>
+          ) : (
+            <div className="text-sm text-paper">{item.due_at ? new Date(item.due_at).toLocaleString() : "No deadline set"}</div>
+          )}
+          <p className="text-[11px] text-faint mt-2">Assigned users receive one reminder when the case is due within 24 hours.</p>
         </div>
       </Panel>
 

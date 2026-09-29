@@ -1,6 +1,6 @@
-# BlueB Incident Tracking System
+# Nib Incident Tracking System
 
-A full-stack clone of the BlueB SOC dashboard: dark-themed incident tracking
+A full-stack Nib SOC dashboard: dark-themed incident tracking
 app with role-based access control, a live dashboard, a full incident
 intake wizard, real file uploads, an audit trail, notifications, and team
 chat.
@@ -13,7 +13,7 @@ chat.
 ## Project structure
 
 ```
-blueb/
+nib/
   backend/     Express API + SQLite database + uploaded files
   frontend/    React app (Vite)
 ```
@@ -102,6 +102,8 @@ Try logging in as different roles to see the UI adapt — e.g. only
   (`../`) are rejected with a 400.
 
 **Case management**
+- **Response deadlines** — SOC Admins can set or clear a manual due time on a case; open overdue and due-within-24-hours views are available from the dashboard and case list, and each case row shows its deadline
+- Assigned users receive an in-app notification (and email if configured) once when a deadline enters the 24-hour window; overdue cases are also notified once if the server was offline as the deadline passed; changing a deadline enables a new reminder
 - **Case List** — server-side search + pagination (15/page), filterable by
   status via the sidebar, and a "My Cases" view (cases assigned to you)
 - **Case Detail**:
@@ -154,10 +156,11 @@ Try logging in as different roles to see the UI adapt — e.g. only
 
 Beyond the original `cases`, `users`, `case_notes`, `chat_messages` tables:
 
+- **`cases.due_at` / `cases.due_reminded_at`** — response deadline and once-per-deadline reminder marker
 - **`users.active`** — soft-deactivation flag, checked on every
   authenticated request, not just at login
 - **`case_history`** — audit trail: one row per `created` / `status_changed`
-  / `rejected` / `assigned` / `edited` / `archived` / `restored` event, with
+  / `rejected` / `assigned` / `edited` / `deadline_changed` / `archived` / `restored` event, with
   actor and timestamp
 - **`iocs`** — real, queryable IOC records per case (type, value, threat
   intel source, count, percentage, description, attached images/documents),
@@ -171,12 +174,12 @@ Beyond the original `cases`, `users`, `case_notes`, `chat_messages` tables:
 |--------|--------------------------------|-----------------------|--------------|
 | POST   | /api/auth/login                | — (rate limited)      | Login, returns JWT |
 | GET    | /api/auth/me                   | any                   | Current user info |
-| GET    | /api/cases                     | any                   | Paginated list (`?status=&archived=&assignedToMe=&q=&page=&pageSize=`) |
-| GET    | /api/cases/stats               | any                   | Dashboard stats (`?from=&to=`) |
+| GET    | /api/cases                     | any                   | Paginated list (`?status=&archived=&assignedToMe=&q=&due=overdue%7Cupcoming&page=&pageSize=`) |
+| GET    | /api/cases/stats               | any                   | Dashboard stats and deadline workload (`?from=&to=`) |
 | GET    | /api/cases/lookup/users        | any                   | Active user list, for the assignment dropdown |
 | GET    | /api/cases/:id                 | any                   | Case detail + notes + history + IOC records + assignee |
 | POST   | /api/cases                     | any                   | Create a case (accepts full wizard payload incl. IOCs) |
-| PATCH  | /api/cases/:id                 | any (archive: admin)  | Update status/severity; `archived` requires SOC_ADMIN |
+| PATCH  | /api/cases/:id                 | any (archive/deadline: admin) | Update status/severity; `archived` and `due_at` require SOC_ADMIN |
 | PUT    | /api/cases/:id                 | any                   | Edit case fields (title, summary, IPs, etc.) |
 | POST   | /api/cases/:id/reject          | SOC_ADMIN, IR_ANALYST | Reject a case; label derived from caller's role |
 | POST   | /api/cases/:id/assign          | SOC_ADMIN             | Assign/unassign a case; notifies the assignee |
@@ -199,6 +202,21 @@ Beyond the original `cases`, `users`, `case_notes`, `chat_messages` tables:
 | GET    | /api/iocs/types                | any                   | Distinct IOC types recorded, for a filter dropdown |
 
 All routes above except `/api/auth/login` require `Authorization: Bearer <token>`.
+
+## Response deadlines
+
+SOC Admins can set or clear a response deadline from a case detail page. Due
+values are stored in UTC. The dashboard shows counts and the five nearest
+cases that are overdue or due within 24 hours; case-list filters show all
+matching cases. Completed, rejected, and archived cases are excluded.
+
+The backend checks for reminders when it starts and once an hour thereafter.
+It notifies the active assignee once when a case enters its final 24 hours;
+if the server was offline at the deadline, it sends the overdue notice when it
+returns. Changing or clearing a deadline resets the reminder state. In-app
+notifications always work; email follows the existing SMTP and user preference
+settings. Reminder scheduling runs in this single backend process, so run one
+instance of the API to avoid duplicate scheduler work.
 
 ## Email notifications
 
@@ -230,7 +248,7 @@ History.
 - `schema.sql` — a Postgres translation of the schema in `db.js` (booleans,
   JSONB, timestamps, and enforced foreign keys, plus indexes worth having
   under real concurrent load)
-- `migrate-data.js` — reads every row out of `blueb.db` and inserts it into
+- `migrate-data.js` — reads every row out of `nib.db` and inserts it into
   Postgres, preserving IDs so foreign keys stay valid; safe to re-run
 
 **Important scope note:** this moves your *data*, not the running app. The
@@ -263,19 +281,72 @@ deliberately separate one from moving your data — see
 
 ## Reliability checks and deployment configuration
 
-Run `npm test` in `backend` for isolated API permission and configuration tests.
-Run `npm test` and `npm run build` in `frontend` for session handling checks and the production build.
-Backend tests use an in-memory database, leaving existing records untouched.
+Run `npm test` in `backend` for isolated HTTP workflow, permission, and configuration tests.
+Run `npm test` and `npm run build` in `frontend` for session handling, API recovery,
+pagination checks, and the production build. Backend tests use in-memory databases,
+a temporary upload directory, and offline email logging, leaving existing records
+untouched and sending no real email.
+
+The workflow suite exercises incident/IOC persistence, edits and notes, assignment,
+rejection and archiving, notification ownership, search and dashboard filters,
+deadline permissions and reminder deduplication, case linking, multipart uploads,
+chat, account administration, and critical-incident alerts. An injected database
+failure verifies that incident creation rolls back its case, IOCs, and history
+together. Invalid IOC payloads and blank titles are rejected before creation;
+assignment requires an active user.
+
+See `test_workflow.txt` for the coverage boundary and remaining browser checks.
+The separate browser suite checks core browser workflows. The delivery/restart
+suite verifies SMTP against a loopback receiver and scheduler behavior across
+real process restarts; external-provider delivery and actual hour-long timing
+are outside this automated coverage. `UPLOAD_DIR` optionally selects an existing upload
+directory; the default remains `backend/uploads`.
 
 Set `NODE_ENV=production` and provide a randomly generated `JWT_SECRET` of at
 least 32 characters (for example, generate one with `openssl rand -hex 32`).
 Missing, short, and documented placeholder secrets are rejected at startup.
 Do not enable `SEED_DEMO` in production. Existing demo accounts are not deleted
 by this change; remove or secure them before using an existing demo database in production.
-`DATABASE_PATH` optionally selects a database file; the default remains `backend/blueb.db`.
+`DATABASE_PATH` optionally selects a database file; the default remains `backend/nib.db`.
 
 Authorization reads each user's current role and active status on every request.
 Case rejection must use the dedicated reject endpoint, including for admins.
 The frontend clears the session on authenticated API 401 responses or the
 `ACCOUNT_DEACTIVATED` code, while ordinary permission-denied responses keep the
 session intact. User details refresh on startup and window focus.
+
+## Browser workflow checks
+
+From the project root, run `npm install`, then `npx playwright install chromium`.
+Run `npm run test:e2e` for browser checks or `npm run verify` for backend tests,
+frontend tests, the production build, and browser checks together.
+
+Browser tests start isolated services on ports 4015 and 5175, create temporary
+accounts/database/uploads, and disable SMTP. They cover sign-in and refresh,
+admin-route protection, incident validation and creation with an attachment,
+notes and status updates, search persistence, admin assignment and deadlines,
+and mobile navigation and page width. Failed checks retain screenshots and
+traces under `test-results/`. The development proxy can be overridden with
+`API_PROXY_TARGET`; its default remains port 4000.
+
+The Nib rename changes browser session keys, so existing users must sign in
+again. The SQLite default is now `backend/nib.db`. In this workspace the existing
+database was copied with SQLite's backup API and integrity-checked; the original
+is retained as `backend/nib-before-rename.db` with its sidecar files. The outer
+workspace directory retains its existing name so open IDE paths remain valid.
+
+## Email and scheduler verification
+
+`npm --prefix backend test` includes `backend/test/delivery-restart.test.js`.
+It starts the real backend with a temporary on-disk database and a loopback-only
+SMTP receiver. It verifies accepted mail and its content, SMTP rejection logging,
+in-app notification retention after email failure, restart deduplication,
+startup catch-up for cases that became overdue offline, and recurring delivery
+without restarting the server. No messages leave the machine.
+
+The test checks that the server registers a 3,600,000 ms interval, then speeds
+that interval up with a test-only preload. Production scheduling is unchanged.
+No hour-long wall-clock wait is claimed. SMTP authentication, TLS, and delivery
+to an external inbox still require verification with the deployment's mail
+provider. Failed email sends remain logged without automatic retry; in-app
+reminders persist independently.
