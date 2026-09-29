@@ -22,6 +22,15 @@ async function request(path, { method = "GET", body, token } = {}) {
 }
 
 export const api = {
+  slaPolicies: (token) => request('/sla', { token }),
+  saveSlaPolicies: (token, policies) => request('/sla', { token, method: 'PUT', body: { policies } }),
+  applySla: (token, id) => request(`/cases/${id}/sla`, { token, method: 'POST' }),
+  playbooks: (token) => request('/playbooks', { token }),
+  createPlaybook: (token, body) => request('/playbooks', { token, method: 'POST', body }),
+  editPlaybook: (token, id, body) => request(`/playbooks/${id}`, { token, method: 'PUT', body }),
+  casePlaybooks: (token, id) => request(`/cases/${id}/playbooks`, { token }),
+  attachPlaybook: (token, id, templateId) => request(`/cases/${id}/playbooks`, { token, method: 'POST', body: { templateId } }),
+  updatePlaybookTask: (token, id, taskId, body) => request(`/cases/${id}/playbooks/tasks/${taskId}`, { token, method: 'PATCH', body }),
   login: (username, password) =>
     request("/auth/login", { method: "POST", body: { username, password } }),
   me: (token) => request("/auth/me", { token }),

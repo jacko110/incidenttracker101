@@ -9,6 +9,8 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 import { canReject, canArchive, canAssign } from "../permissions";
 
+import CasePlaybooks from "../components/CasePlaybooks";
+
 const STATUSES = ["Under Review", "In Progress", "Completed", "Attempt"];
 
 const HISTORY_LABELS = {
@@ -20,6 +22,11 @@ const HISTORY_LABELS = {
   archived: "Archived",
   restored: "Restored",
   deadline_changed: "Deadline changed",
+  deadline_escalated: "Escalated to SOC Admins",
+  playbook_attached: "Playbook attached",
+  playbook_task_assigned: "Task assigned",
+  playbook_task_completed: "Task completed",
+  playbook_task_reopened: "Task reopened",
 };
 
 export default function CaseDetail() {
@@ -58,6 +65,13 @@ export default function CaseDetail() {
   useEffect(() => {
     if (canAssign(user.role)) api.listUsers(token).then(setUsers).catch(() => {});
   }, [token, user.role]);
+
+  async function applySla() {
+    setSavingDeadline(true); setError("");
+    try { await api.applySla(token, id); load(); }
+    catch (err) { setError(err.message); }
+    finally { setSavingDeadline(false); }
+  }
 
   async function submitLink(e) {
     e.preventDefault();
@@ -380,7 +394,13 @@ export default function CaseDetail() {
           ) : (
             <div className="text-sm text-paper">{item.due_at ? new Date(item.due_at).toLocaleString() : "No deadline set"}</div>
           )}
-          <p className="text-[11px] text-faint mt-2">Assigned users receive one reminder when the case is due within 24 hours.</p>
+          <p className="text-xs text-muted mt-2">{item.deadline_source === 'sla' ? 'Deadline source: severity SLA policy' : item.deadline_source === 'manual' || item.due_at ? 'Deadline source: manual override' : 'No SLA deadline applied'}</p>
+          {canAssign(user.role) && !item.archived && !['Completed', 'Rejected'].includes(item.status) && <div className="mt-2">
+            <button type="button" disabled={savingDeadline} onClick={applySla} className="text-xs text-cyan border border-line rounded px-3 py-2 disabled:opacity-50">Apply current SLA policy</button>
+            <p className="text-xs text-muted mt-1">Replaces the deadline using the current severity and original case creation time. An older case may become overdue.</p>
+          </div>}
+          <p className="text-[11px] text-faint mt-2">Assigned users receive one reminder when the case is due within 24 hours. Overdue cases are escalated once to active SOC Admins on the next hourly check.</p>
+          {item.due_escalated_at && <p className="text-xs text-thread mt-2">Escalated to SOC Admins · {new Date(item.due_escalated_at.replace(' ', 'T') + 'Z').toLocaleString()}</p>}
         </div>
       </Panel>
 
@@ -521,6 +541,8 @@ export default function CaseDetail() {
           </div>
         </div>
       )}
+
+      <CasePlaybooks key={id} caseId={id} readOnly={Boolean(item.archived) || ["Completed", "Rejected"].includes(item.status)} onChange={load} />
 
       <Panel title="Notes">
         <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">

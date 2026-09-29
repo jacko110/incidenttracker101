@@ -12,6 +12,8 @@ const Archive = lazy(() => import("./pages/Archive"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Users = lazy(() => import("./pages/Users"));
 const IocSearch = lazy(() => import("./pages/IocSearch"));
+const SlaPolicies = lazy(() => import("./pages/SlaPolicies"));
+const Playbooks = lazy(() => import("./pages/Playbooks"));
 const Profile = lazy(() => import("./pages/Profile"));
 import { useAuth } from "./context/AuthContext";
 import { api } from "./api";
@@ -41,6 +43,8 @@ const CRUMBS = {
   "/users": "User Management",
   "/iocs": "Search IOCs",
   "/profile": "My Profile",
+  "/playbooks": "Playbooks",
+  "/sla": "SLA policies",
 };
 
 function Layout({ children }) {
@@ -98,6 +102,8 @@ export default function App() {
                 <Route path="/archive" element={<Archive />} />
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/iocs" element={<IocSearch />} />
+                <Route path="/sla" element={<RequireAdmin><SlaPolicies /></RequireAdmin>} />
+                <Route path="/playbooks" element={<RequireAdmin><Playbooks /></RequireAdmin>} />
                 <Route path="/profile" element={<Profile />} />
                 <Route
                   path="/users"

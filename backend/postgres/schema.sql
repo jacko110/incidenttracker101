@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS cases (
   origin_country TEXT,
   assigned_to INTEGER REFERENCES users(id),
   due_at TIMESTAMPTZ,
+  deadline_source TEXT,
   due_reminded_at TIMESTAMPTZ,
+  due_escalated_at TIMESTAMPTZ,
   rejected_by TEXT,                       -- 'SOC Admin' | 'IR Analyst' | NULL
   archived BOOLEAN DEFAULT FALSE,
   source_ip JSONB,
@@ -130,3 +132,50 @@ CREATE INDEX IF NOT EXISTS idx_iocs_case_id ON iocs(case_id);
 CREATE INDEX IF NOT EXISTS idx_iocs_value ON iocs(value);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, read);
 CREATE INDEX IF NOT EXISTS idx_case_history_case_id ON case_history(case_id);
+
+CREATE TABLE IF NOT EXISTS playbook_templates (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  steps JSONB NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS case_playbooks (
+  id SERIAL PRIMARY KEY,
+  case_id INTEGER NOT NULL REFERENCES cases(id),
+  template_id INTEGER NOT NULL REFERENCES playbook_templates(id),
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  attached_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(case_id, template_id)
+);
+CREATE TABLE IF NOT EXISTS playbook_tasks (
+  id SERIAL PRIMARY KEY,
+  case_playbook_id INTEGER NOT NULL REFERENCES case_playbooks(id),
+  position INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  assigned_to INTEGER REFERENCES users(id),
+  completed_at TIMESTAMPTZ,
+  completed_by INTEGER REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_playbook_tasks_parent ON playbook_tasks(case_playbook_id);
+
+
+CREATE TABLE IF NOT EXISTS sla_policies (
+  id SERIAL PRIMARY KEY,
+  severity TEXT NOT NULL UNIQUE,
+  response_hours INTEGER NOT NULL CHECK(response_hours BETWEEN 1 AND 8760),
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_by INTEGER REFERENCES users(id),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS sla_policy_history (
+  id SERIAL PRIMARY KEY,
+  actor_id INTEGER REFERENCES users(id),
+  policies JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

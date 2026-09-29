@@ -217,3 +217,85 @@ was performed. Tests use temporary database files and local SMTP, with no real
 recipient or development data affected. External inbox receipt, provider
 credentials and TLS remain deployment-specific checks, not claimed as verified.
 Email retry/queueing is not implemented; failed sends are logged for review.
+
+Incident playbooks
+------------------
+[ ] 38. Sign in as admin, open Playbooks, and choose the Phishing starter.
+       Customize its name and steps, then save. Confirm it appears in Templates.
+[ ] 39. Open an active case and attach the saved template under Incident
+       playbooks. Confirm its steps appear in order and it cannot be attached twice.
+[ ] 40. Assign a task to an active analyst. Reload and confirm the owner remains.
+[ ] 41. Sign in as an analyst and complete a task. Confirm progress updates and
+       the task shows your username and completion time after reloading.
+[ ] 42. Reopen the task. Confirm progress decreases and Activity History retains
+       both completion and reopening with their actors.
+[ ] 43. As admin, edit the template's steps and disable availability. Confirm the
+       attached case retains its original checklist and new cases cannot attach it.
+[ ] 44. As analyst, confirm the Playbooks management page is inaccessible and
+       task assignment controls are absent; completing/reopening remains available.
+[ ] 45. Complete, reject or archive a case. Confirm its checklist remains visible
+       but cannot be changed. Reopen/restore an active case and confirm editing returns.
+
+Automated playbook coverage: backend/test/playbooks.test.js and the Chromium
+playbook workflow in e2e/workflows.spec.cjs. These test permissions, snapshots,
+owner validation, completion actors/times, duplicate protection, closed-case
+locks and rollback if audit writing fails. Templates, tasks and activity entries
+are stored in temporary databases during testing.
+
+Severity-based SLA policies
+--------------------------
+[ ] 46. As admin, open SLA policies. Confirm all new policies start disabled.
+       Enable High, set it to 6 hours, save, and reload to confirm persistence.
+[ ] 47. Create a High-severity case. Confirm its deadline is 6 hours from case
+       creation and the source is severity SLA policy. Confirm it is due soon.
+[ ] 48. Change the High policy to 8 hours. Confirm the existing case's deadline
+       remains unchanged, while a new High case gets the new response time.
+[ ] 49. Clear the case deadline manually. Confirm the source is manual and it
+       remains cleared after policy edits. Apply current SLA policy and confirm
+       the deadline is recalculated from original creation time, not now.
+[ ] 50. As analyst, confirm SLA policy administration is inaccessible and the
+       policy-application button is absent. Automatic deadlines remain visible.
+[ ] 51. Disable a severity policy. Confirm new cases of that severity have no
+       automatic deadline and existing deadlines remain intact.
+
+Automated SLA checks cover admin permissions, validation, UTC deadline math,
+all four severities, disabled/N/A behavior, policy and severity edit stability,
+manual clearing, reminder-marker preservation/reset, closed-case protection,
+policy-audit rollback and the browser configuration/application workflow.
+
+
+Overdue escalation
+------------------
+[ ] 52. Give an active case a past deadline (manual or SLA), then wait for the
+       hourly check or restart the development backend. Confirm each active SOC
+       Admin receives one escalation notification linked to the case.
+[ ] 53. Open the case. Confirm the escalation timestamp and Activity History
+       entry list the admin recipients. Repeat the check/restart and confirm
+       no duplicate escalation notifications or history entries appear.
+[ ] 54. Confirm inactive admins receive no escalation. Disable an active admin's
+       email preference and confirm their in-app escalation still appears.
+[ ] 55. Confirm unassigned overdue cases escalate, but completed, rejected,
+       archived and future-deadline cases do not.
+[ ] 56. Change the deadline to another past timestamp. Confirm the escalation
+       marker clears and the next check sends one new escalation. Saving the
+       same deadline should preserve the marker and prevent another alert.
+
+Automated coverage: backend/test/escalation.test.js, the manual deadline checks
+in sla.test.js, and the local SMTP/process-restart scenarios in
+delivery-restart.test.js. SMTP failures preserve the in-app alert and history;
+email retrying is not part of this feature. Scheduling runs hourly, accelerated
+only in isolated tests. No external email or development records are used by
+the automated checks.
+
+Milestone validation — 2026-09-29
+--------------------------------
+Command: npm run verify
+Result: PASS — 39 backend tests, 3 frontend tests, production build, and
+6 Chromium browser workflows. Git diff whitespace check also passed.
+
+Scope: incident playbooks, severity-based SLA policies, overdue escalation,
+existing workflows, local SMTP delivery/failure, and actual backend restart
+recovery without duplicate escalation. Test data was isolated; existing
+application records were not modified. External mail-provider delivery and
+PostgreSQL execution remain outside this validation. Manual checklist boxes
+above are intentionally unchanged by this automated run.

@@ -96,6 +96,8 @@ export default function Sidebar({ open, counts }) {
         <SideLink to="/iocs" icon={Search} label="Search IOCs" />
         <SideLink to="/archive" icon={Archive} label="Archive" />
         <SideLink to="/chat" icon={MessageCircle} label="Chat" />
+        {canManageUsers(user?.role) && <SideLink to="/sla" icon={Clock} label="SLA policies" />}
+        {canManageUsers(user?.role) && <SideLink to="/playbooks" icon={CheckCircle2} label="Playbooks" />}
         {canManageUsers(user?.role) && (
           <SideLink to="/users" icon={UsersIcon} label="User management" />
         )}

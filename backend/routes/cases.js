@@ -4,6 +4,8 @@ const { requireAuth, requireRole } = require("../middleware/auth");
 const { sendEmail } = require("../services/email");
 const { DUE_SOON_HOURS } = require("../services/deadlines");
 
+const { applyPolicy } = require("../services/sla");
+
 const router = express.Router();
 router.use(requireAuth);
 
@@ -347,6 +349,7 @@ router.post("/", (req, res) => {
     const caseId = info.lastInsertRowid;
     if (iocs) saveIocsTable(caseId, iocs);
     logHistory(caseId, req.user.id, "created", `Case created by ${req.user.username}`);
+    applyPolicy(caseId, req.user.id);
     return caseId;
   })();
 
@@ -396,12 +399,16 @@ router.patch("/:id", (req, res) => {
       status = COALESCE(?, status),
       severity = COALESCE(?, severity),
       archived = COALESCE(?, archived),
+      deadline_source = CASE WHEN ? THEN 'manual' ELSE deadline_source END,
       due_at = CASE WHEN ? THEN ? ELSE due_at END,
       due_reminded_at = CASE WHEN ? THEN NULL ELSE due_reminded_at END,
+      due_escalated_at = CASE WHEN ? THEN NULL ELSE due_escalated_at END,
       updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`
   ).run(status ?? null, severity ?? null, archived === undefined ? null : archived ? 1 : 0,
+    due_at !== undefined ? 1 : 0,
     due_at !== undefined ? 1 : 0, due_at === null ? null : normalizedDueAt,
+    due_at !== undefined && (due_at === null || normalizedDueAt !== existing.due_at) ? 1 : 0,
     due_at !== undefined && (due_at === null || normalizedDueAt !== existing.due_at) ? 1 : 0,
     req.params.id);
 
@@ -411,7 +418,7 @@ router.patch("/:id", (req, res) => {
   if (severity && severity !== existing.severity) {
     logHistory(req.params.id, req.user.id, "edited", `Severity changed from "${existing.severity}" to "${severity}"`);
   }
-  if (due_at !== undefined && (due_at === null ? existing.due_at !== null : normalizedDueAt !== existing.due_at)) {
+  if (due_at !== undefined && (existing.deadline_source !== "manual" || (due_at === null ? existing.due_at !== null : normalizedDueAt !== existing.due_at))) {
     logHistory(req.params.id, req.user.id, "deadline_changed", due_at === null
       ? "Response deadline cleared"
       : `Response deadline set to ${normalizedDueAt}`);

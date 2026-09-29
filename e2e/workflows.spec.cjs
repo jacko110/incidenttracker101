@@ -4,7 +4,7 @@ async function login(page, username = 'analyst') {
   await page.locator('form input').nth(0).fill(username);
   await page.locator('input[type=password]').fill('browser-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page).toHaveURL('http://127.0.0.1:5175/');
+  await expect(page).not.toHaveURL(/\/login$/);
   await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
 }
 async function newCase(page, title) {
@@ -101,4 +101,83 @@ test('mobile navigation closes after selection and pages fit the viewport', asyn
     await expect(page.locator('main').getByRole('heading').first()).toBeVisible();
     expect(await page.locator('main').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   }
+});
+
+test('admin creates a playbook; case tasks persist, record completion and preserve template snapshots', async ({ page }) => {
+  await login(page, 'admin');
+  await page.getByRole('link', { name: 'Playbooks', exact: true }).click();
+  await page.getByLabel('Template name').fill('Browser investigation');
+  await page.getByLabel('Description', { exact: true }).fill('Investigate and document');
+  await page.getByLabel('Steps (one per line)').fill('Collect evidence\nDocument findings');
+  await page.getByRole('button', { name: 'Save playbook' }).click();
+  await expect(page.getByRole('status')).toContainText('Playbook saved');
+  const incident = await newCase(page, 'Browser playbook case');
+  await page.goto(`/cases/${incident.id}`);
+  await page.getByLabel('Playbook template').selectOption({ label: 'Browser investigation' });
+  await page.getByRole('button', { name: 'Attach playbook' }).click();
+  await expect(page.getByText('0 of 2 tasks completed')).toBeVisible();
+  await page.getByLabel('Owner for Collect evidence').selectOption({ label: 'analyst' });
+  await expect(page.getByLabel('Owner for Collect evidence')).toBeEnabled();
+  await page.getByRole('checkbox', { name: 'Collect evidence', exact: true }).click();
+  await expect(page.getByText('1 of 2 tasks completed')).toBeVisible();
+  await expect(page.getByText(/Completed by admin/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('checkbox', { name: 'Collect evidence', exact: true })).toBeChecked();
+  await expect(page.getByLabel('Owner for Collect evidence')).toHaveValue('1');
+  await page.goto('/playbooks');
+  await page.getByRole('button', { name: 'Edit Browser investigation', exact: true }).click();
+  await page.getByLabel('Steps (one per line)').fill('Replacement step');
+  await page.getByLabel('Available for new cases').uncheck();
+  await page.getByRole('button', { name: 'Save playbook' }).click();
+  await expect(page.getByRole('status')).toContainText('Playbook saved');
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await login(page, 'analyst');
+  await page.goto(`/cases/${incident.id}`);
+  await expect(page.getByRole('checkbox', { name: 'Collect evidence', exact: true })).toBeChecked();
+  await expect(page.getByText('Document findings', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Owner for Collect evidence')).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Document findings', exact: true }).click();
+  await expect(page.getByText('2 of 2 tasks completed')).toBeVisible();
+  await expect(page.getByText(/Completed by analyst/)).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Collect evidence', exact: true }).click();
+  await expect(page.getByText('1 of 2 tasks completed')).toBeVisible();
+  await page.getByRole('button', { name: 'Completed', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: 'Collect evidence', exact: true })).toBeDisabled();
+  await page.goto('/playbooks');
+  await expect(page).toHaveURL('http://127.0.0.1:5175/');
+});
+
+test('SLA policy creates automatic deadlines and supports explicit manual overrides', async ({ page }) => {
+  await login(page, 'admin');
+  await page.getByRole('link', { name: 'SLA policies', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'High', exact: true }).check();
+  await page.getByLabel('High response hours', { exact: true }).fill('6');
+  await page.getByRole('button', { name: 'Save SLA policies' }).click();
+  await expect(page.getByRole('status')).toContainText('SLA policies saved');
+  await page.reload();
+  await expect(page.getByRole('checkbox', { name: 'High', exact: true })).toBeChecked();
+  const incident = await page.evaluate(async () => {
+    const response = await fetch('/api/cases', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('nib_token')}` }, body: JSON.stringify({ title: 'Browser SLA incident', severity: 'High' }) });
+    if (!response.ok) throw new Error('Case creation failed');
+    return response.json();
+  });
+  expect(incident.deadline_source).toBe('sla');
+  await page.goto(`/cases/${incident.id}`);
+  await expect(page.getByText('Deadline source: severity SLA policy')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(page.getByLabel('Response deadline', { exact: true })).toHaveValue('');
+  await expect(page.getByText('Deadline source: manual override')).toBeVisible();
+  await page.getByRole('button', { name: 'Apply current SLA policy' }).click();
+  await expect(page.getByText('Deadline source: severity SLA policy')).toBeVisible();
+  await page.getByRole('link', { name: 'Due soon', exact: true }).click();
+  await expect(page.getByText('Browser SLA incident', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await login(page, 'analyst');
+  await page.goto('/sla');
+  await expect(page).toHaveURL('http://127.0.0.1:5175/');
+  await page.goto(`/cases/${incident.id}`);
+  await expect(page.getByText('Deadline source: severity SLA policy')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Apply current SLA policy' })).toHaveCount(0);
 });

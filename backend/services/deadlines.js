@@ -39,4 +39,42 @@ function sendDueReminders() {
   return dueCases.length;
 }
 
-module.exports = { DUE_SOON_HOURS, sendDueReminders };
+function sendOverdueEscalations() {
+  const admins = db.prepare("SELECT id,username,email,email_notifications FROM users WHERE role='SOC_ADMIN' AND active=1").all();
+  // Keep cases eligible if there is currently nobody to notify.
+  if (!admins.length) return 0;
+  const cases = db.prepare(`SELECT id,title,due_at FROM cases
+    WHERE archived=0 AND status NOT IN ('Completed','Rejected')
+      AND due_escalated_at IS NULL AND due_at IS NOT NULL
+      AND datetime(due_at) < datetime('now') ORDER BY datetime(due_at),id`).all();
+  const record = db.transaction((incident, message) => {
+    const changed = db.prepare(`UPDATE cases SET due_escalated_at=CURRENT_TIMESTAMP
+      WHERE id=? AND due_escalated_at IS NULL AND due_at=?
+        AND archived=0 AND status NOT IN ('Completed','Rejected')`).run(incident.id, incident.due_at);
+    if (!changed.changes) return false;
+    const notify = db.prepare('INSERT INTO notifications(user_id,case_id,message) VALUES (?,?,?)');
+    for (const admin of admins) notify.run(admin.id, incident.id, message);
+    db.prepare('INSERT INTO case_history(case_id,actor_id,action,detail) VALUES (?,NULL,?,?)')
+      .run(incident.id, 'deadline_escalated', `Overdue deadline escalated to SOC Admins: ${admins.map(admin => admin.username).join(', ')}`);
+    return true;
+  });
+  let count = 0;
+  for (const incident of cases) {
+    const message = `Escalation: case #${incident.id} is overdue: "${incident.title}"`;
+    if (!record(incident, message)) continue;
+    count++;
+    for (const admin of admins) {
+      if (admin.email && admin.email_notifications) sendEmail({
+        to: admin.email, subject: `Nib: ${message}`,
+        text: `Hi ${admin.username},\n\n${message}\nResponse deadline: ${incident.due_at}\nView the case: /cases/${incident.id}\n\nPlease review ownership and next actions.`,
+      }).catch(() => {});
+    }
+  }
+  return count;
+}
+
+function checkDeadlines() {
+  sendDueReminders();
+  sendOverdueEscalations();
+}
+module.exports = { DUE_SOON_HOURS, sendDueReminders, sendOverdueEscalations, checkDeadlines };

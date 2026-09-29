@@ -42,10 +42,17 @@ const TABLES_IN_ORDER = [
   "notifications",
   "email_log",
   "case_links",
+  "playbook_templates",
+  "case_playbooks",
+  "playbook_tasks",
+  "sla_policies",
+  "sla_policy_history",
 ];
 
 // SQLite stores booleans as 0/1 integers; Postgres wants real booleans.
 const BOOLEAN_COLUMNS = {
+  sla_policies: ["enabled"],
+  playbook_templates: ["active"],
   users: ["active", "email_notifications"],
   cases: ["archived"],
   notifications: ["read"],
@@ -53,6 +60,8 @@ const BOOLEAN_COLUMNS = {
 
 // SQLite stores these as TEXT-encoded JSON; Postgres columns are JSONB.
 const JSON_COLUMNS = {
+  sla_policy_history: ["policies"],
+  playbook_templates: ["steps"],
   cases: ["source_ip", "destination_ip", "http_status", "iocs"],
   iocs: ["images", "documents"],
 };

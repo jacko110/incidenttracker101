@@ -148,6 +148,34 @@ test('SMTP acceptance and rejection, hourly scheduling, restart deduplication an
     await until(() => ticks > failedTick + 2, 'scheduler continues after rejected email');
     assert.equal(count('email_log'), 4); // Existing policy: email failures are not retried.
     assert.equal(child.exitCode, null);
+
+    // Isolate escalation checks from the assignee reminders above.
+    await stop();
+    db.prepare("UPDATE cases SET status='Completed'").run();
+    const admin = db.prepare("INSERT INTO users(username,password_hash,role,email) VALUES (?,?,'SOC_ADMIN',?)")
+      .run('supervisor','unused','reject@example.invalid').lastInsertRowid;
+    const escalated = insertCase.run('Escalation SMTP rejection', null, overdue).lastInsertRowid;
+    await start();
+    await until(() => count('email_log') === 5, 'escalation SMTP rejection');
+    assert.equal(count('notifications'), 5);
+    assert.equal(db.prepare('SELECT user_id FROM notifications WHERE case_id=?').get(escalated).user_id, admin);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM case_history WHERE case_id=? AND action='deadline_escalated'").get(escalated).n, 1);
+    const escalationMarker = db.prepare('SELECT due_escalated_at FROM cases WHERE id=?').get(escalated).due_escalated_at;
+    assert.ok(escalationMarker);
+    assert.equal(db.prepare("SELECT status FROM email_log ORDER BY id DESC LIMIT 1").get().status, 'failed');
+    await stop(); await start();
+    const escalationTick = ticks;
+    await until(() => ticks > escalationTick + 2, 'escalation deduplication after restart');
+    assert.equal(count('notifications'), 5); assert.equal(count('email_log'), 5);
+    assert.equal(db.prepare('SELECT due_escalated_at FROM cases WHERE id=?').get(escalated).due_escalated_at, escalationMarker);
+    db.prepare('UPDATE users SET email=? WHERE id=?').run('supervisor@example.invalid', admin);
+    insertCase.run('Escalation SMTP acceptance', null, overdue);
+    await until(() => count('email_log') === 6, 'escalation SMTP acceptance');
+    assert.equal(receiver.messages.length, 4);
+    assert.match(receiver.messages[3].recipient, /supervisor@example.invalid/);
+    assert.match(receiver.messages[3].raw, /Escalation SMTP acceptance/);
+    assert.equal(count('notifications'), 6);
+    assert.equal(db.prepare("SELECT status FROM email_log ORDER BY id DESC LIMIT 1").get().status, 'sent');
   } finally {
     await stop();
     for (const socket of receiver.sockets) socket.destroy();

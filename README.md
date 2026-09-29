@@ -350,3 +350,116 @@ No hour-long wall-clock wait is claimed. SMTP authentication, TLS, and delivery
 to an external inbox still require verification with the deployment's mail
 provider. Failed email sends remain logged without automatic retry; in-app
 reminders persist independently.
+
+## Incident playbooks
+
+SOC Admins can open **Playbooks** in the sidebar to create or edit templates.
+A template has a name, description and 1–50 ordered steps. Optional Phishing and
+Malware starter drafts can be customized before saving. Disable **Available for
+new cases** to retire a template without removing existing case checklists.
+
+On an active case, any signed-in analyst can attach an available template from
+**Incident playbooks**. Each template can be attached once per case. The name,
+description and steps are copied into the case, so subsequent template edits
+or retirement do not alter an investigation's checklist.
+
+Admins can assign each task to an active user or leave it unassigned. Any
+signed-in team member can complete or reopen tasks, matching the shared case
+workflow; assignment records ownership rather than restricting completion.
+Completed tasks show who completed them and when. Attaching a playbook,
+assignment changes, completion and reopening are recorded in Activity History.
+Updates and their audit entries are committed together. Checklists are read-only
+on completed, rejected and archived cases; reopening/restoring an otherwise
+active case makes its checklist editable again. Checklist completion does not
+automatically change the case status or prevent case closure.
+
+The additive SQLite migration creates `playbook_templates`, `case_playbooks`,
+and `playbook_tasks` on backend startup. Existing cases and user data are kept.
+The PostgreSQL schema and data-export mappings include these tables; the running
+application still uses SQLite. PostgreSQL execution has not been validated in
+this feature's test run.
+
+API routes (all require authentication):
+
+| Method | Route | Access |
+|---|---|---|
+| GET | `/api/playbooks` | All roles; inactive templates visible to admins only |
+| POST | `/api/playbooks` | Admin: create `{name, description, steps, active}` |
+| PUT | `/api/playbooks/:id` | Admin: replace template fields |
+| GET | `/api/cases/:caseId/playbooks` | All roles |
+| POST | `/api/cases/:caseId/playbooks` | All roles: attach `{templateId}` |
+| PATCH | `/api/cases/:caseId/playbooks/tasks/:taskId` | All roles: `{completed}`; admin only: `{assigned_to}` |
+
+Run `npm run verify` to exercise template permissions, checklist snapshots,
+assignment validation, completion/reopening audit, closed-case protections,
+transaction rollback, and the complete browser playbook workflow alongside
+existing tests.
+
+## Severity-based SLA deadlines
+
+Admins can open **SLA policies** in the sidebar to enable response times for
+Critical, High, Medium, and Low incidents. Policies start disabled. The form
+suggests 4/8/24/72 hours respectively; these are editable starting values, not
+configured commitments. Allowed response times are whole hours from 1 to 8760.
+
+New cases with an enabled policy receive a UTC deadline calculated from the
+case's creation time. Time is measured in elapsed hours, including weekends and
+nights. Unconfigured/disabled severities and N/A receive no automatic deadline.
+Existing overdue/due-soon views and assignee reminders use these deadlines.
+
+Policy changes and case severity changes preserve existing deadlines. An admin
+can choose **Apply current SLA policy** on an active case to recalculate from
+its original creation time; this may immediately make an older case overdue.
+This action explicitly replaces a manual override. Setting or clearing a date
+manually records the deadline source as manual. Clearing a deadline stays in
+effect until an admin explicitly sets or applies another one. Completed,
+rejected and archived cases cannot have a policy applied.
+
+Applying the same SLA deadline again preserves the reminder marker; changing
+its timestamp resets the marker. SLA application is recorded in case Activity
+History. Policy saves are recorded with their actor in `sla_policy_history`.
+Policy writes and explicit SLA application are transactional with their audit
+entries. Policy history currently has no dedicated UI.
+
+Admin APIs: `GET /api/sla`, `PUT /api/sla` with `{policies: [{severity,
+response_hours, enabled}, ...]}` for all four severities, and
+`POST /api/cases/:id/sla` to apply the current policy. Startup creates
+`sla_policies`, `sla_policy_history`, and the `cases.deadline_source` column
+without changing existing case deadlines. PostgreSQL export mappings are also
+updated; PostgreSQL execution was not part of this verification.
+
+This version sets response deadlines and escalates overdue cases to active SOC
+Admins. It does not add business-hour calendars or email retries.
+
+
+## Overdue-case escalation
+
+On startup and each hourly deadline check, every open, unarchived case whose
+deadline has passed is escalated once to all currently active SOC Admins.
+This applies to manual and SLA deadlines, including unassigned cases. Completed,
+rejected, archived, undated, and not-yet-overdue cases are excluded.
+
+Each admin gets an in-app notification linked to the case. Email is attempted
+only when the admin has an email address and has enabled email notifications.
+The case shows its escalation time and an Activity History entry listing the
+admin recipients, attributed to the system. An admin who is also the assignee
+can receive both the ordinary assignee reminder and the separate escalation.
+
+The `cases.due_escalated_at` marker, admin notifications, and audit entry are
+written in one transaction. Repeated checks and backend restarts do not repeat
+the escalation. Changing or clearing a deadline resets eligibility; setting the
+same deadline or reapplying an unchanged SLA preserves it. Reopening a case
+without changing its deadline does not create another escalation. Admins added
+after an escalation do not receive a retrospective alert for that deadline.
+If no admins are active, the marker remains unset so a later check can retry.
+
+Email runs after the in-app transaction. A failed send is logged without
+removing the in-app notification or retrying email automatically. A process
+crash between committing alerts and sending email can leave email unsent; this
+version does not provide a durable email queue. Escalation can occur up to an
+hour after a deadline, or on startup after downtime. Existing overdue cases are
+eligible at the first startup after this update.
+
+Verification includes active-admin filtering, unassigned cases, exclusions,
+no-admin recovery, opt-out behavior, transaction rollback, deadline resets,
+real process restart deduplication, and local SMTP acceptance/rejection.
