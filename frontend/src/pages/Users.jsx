@@ -60,7 +60,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
             />
           </div>
           <div>
-            <label className="text-xs text-muted mb-1 block">Password (min 8 characters)</label>
+            <label className="text-xs text-muted mb-1 block">Password (min 12 characters)</label>
             <input
               type="password"
               value={password}

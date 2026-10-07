@@ -5,7 +5,7 @@ const db = require('./db');
 async function main() {
   const username = process.env.ADMIN_USERNAME?.trim();
   const password = process.env.ADMIN_PASSWORD;
-  if (!username || !password || password.length < 12) {
+  if (!username || username.length > 100 || !password || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
     throw new Error('Set ADMIN_USERNAME and ADMIN_PASSWORD (at least 12 characters).');
   }
   const passwordHash = await bcrypt.hash(password, 12);

@@ -251,6 +251,23 @@ router.get("/lookup/users", (req, res) => {
 });
 
 // GET /api/cases/:id
+router.get('/:id/report', async (req, res) => {
+  if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(Number(req.params.id))) {
+    return res.status(400).json({ error: 'Invalid case ID' });
+  }
+  try {
+    const report = await require('../services/report').createReport(Number(req.params.id), req.user.username);
+    if (!report) return res.status(404).json({ error: 'Case not found' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="Nib-case-${String(req.params.id).padStart(4, '0')}-report.docx"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(report);
+  } catch (error) {
+    console.error('Case report generation failed:', error.message);
+    res.status(500).json({ error: 'Could not generate the report. Please try again.' });
+  }
+});
+
 router.get("/:id", (req, res) => {
   const row = db.prepare("SELECT * FROM cases WHERE id = ?").get(req.params.id);
   if (!row) return res.status(404).json({ error: "Case not found" });

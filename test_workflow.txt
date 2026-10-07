@@ -313,3 +313,22 @@ RELEASE CHECKS: CASE ACTIVITY AND DEPLOYMENT
    both the case and downloaded attachment persist.
 9. Open a case URL directly and refresh it to confirm frontend routing works.
 10. Check /api/health returns {"ok":true}; configure HTTPS before public use.
+
+WORD REPORT EXPORT
+1. Open a saved case and click Export report (.docx).
+2. Open the downloaded document in Word or LibreOffice.
+3. Check its unique ID, title, status, deadlines, notes, IOCs, task completion,
+   linked cases, and activity history against the case page.
+4. Confirm attachment filenames are listed and their contents are not embedded.
+5. Repeat with each role and an archived case. Check UTC timestamps.
+6. Start editing: confirm export is disabled until edits are saved or cancelled.
+
+PRODUCTION HARDENING
+1. Follow deployment/PRODUCTION.md on a staging Docker host with a fresh volume.
+2. Confirm HTTPS, readiness, persistent evidence, and report exports.
+3. Reset a user password and verify their existing session is rejected.
+4. Confirm a sole administrator cannot deactivate or demote themselves.
+5. Confirm uploaded HTML/SVG documents download instead of executing inline.
+6. Run the backup and restore drill into a separate empty deployment.
+7. Check request logs omit tokens, request bodies, and URL query strings.
+8. Configure external uptime/disk monitoring and test SMTP before live use.

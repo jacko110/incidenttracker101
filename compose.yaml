@@ -6,8 +6,31 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
       SEED_DEMO: "false"
+      TRUST_PROXY: ${TRUST_PROXY:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Nib Alerts <alerts@example.com>}
     volumes:
       - nib_data:/app/data
     restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 15s
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 volumes:
   nib_data:

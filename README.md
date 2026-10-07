@@ -18,6 +18,13 @@ nib/
   frontend/    React app (Vite)
 ```
 
+## Production
+
+Use Node 22 and follow [the production deployment runbook](deployment/PRODUCTION.md).
+It covers HTTPS, fresh account setup, backups, restore drills, monitoring, and
+operational limits. Production uses a single SQLite instance and a persistent
+data volume.
+
 ## Getting started
 
 ### 1. Backend
@@ -43,7 +50,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**. The dev server proxies `/api` requests to
+Use Node 22 (`nvm use` if you use nvm), then open **http://localhost:5173**. The dev server proxies `/api` requests to
 the backend on port 4000 (see `vite.config.js`).
 
 ### 3. Log in
@@ -464,6 +471,22 @@ Verification includes active-admin filtering, unassigned cases, exclusions,
 no-admin recovery, opt-out behavior, transaction rollback, deadline resets,
 real process restart deduplication, and local SMTP acceptance/rejection.
 
+
+## Word incident reports
+
+Open a case and select **Export report (.docx)** to download a Word report of
+its saved state. All authenticated roles that can view cases can export them,
+including archived cases. The filename includes its unique case ID.
+
+Reports contain case details, source/destination IPs, summary, impact,
+recommendations, deadlines, IOCs, attachment filenames, investigation notes,
+response checklist tasks, linked cases, and chronological activity history.
+The report records its generation time and exporting user; timestamps are UTC.
+Attachments are listed, not embedded. Unsaved edits are excluded, and export
+is disabled while editing. Reports are generated on demand and downloaded;
+they are not saved to the server as additional files.
+
+API: `GET /api/cases/:id/report` with a bearer token returns a DOCX attachment.
 
 ## Case activity export
 

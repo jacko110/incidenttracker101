@@ -91,6 +91,15 @@ export const api = {
   },
 
   caseDetail: (token, id) => request(`/cases/${id}`, { token }),
+  exportCaseReport: async (token, id) => {
+    const res = await fetch(`${BASE}/cases/${id}/report`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      checkSession(res, data, token);
+      throw new Error(data.error || 'Report export failed');
+    }
+    return res.blob();
+  },
   createCase: (token, body) => request("/cases", { method: "POST", body, token }),
   updateCase: (token, id, body) =>
     request(`/cases/${id}`, { method: "PATCH", body, token }),
@@ -180,6 +189,7 @@ export const api = {
   // <img src>/<a href> can load them without a custom header.
   fileUrl: (token, url) => {
     if (!url) return url;
+    if (typeof url !== 'string' || !/^\/api\/uploads\/file\/[^/?#]+$/.test(url)) return '';
     const sep = url.includes("?") ? "&" : "?";
     return `${url}${sep}token=${encodeURIComponent(token)}`;
   },

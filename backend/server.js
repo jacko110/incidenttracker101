@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const { seedDemo } = require("./config");
+const { seedDemo, production } = require("./config");
 if (seedDemo) require("./seed");
 
 const authRoutes = require("./routes/auth");
@@ -13,10 +12,25 @@ const userRoutes = require("./routes/users");
 const iocRoutes = require("./routes/iocs");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const { configureSecurity, errorHandler } = require('./middleware/security');
+configureSecurity(app);
+app.use(express.json({ limit: '1mb' }));
+const db = require('./db');
+if (production) {
+  if (!require('fs').existsSync(require('path').join(__dirname, '../frontend/dist/index.html'))) {
+    throw new Error('Production requires a built frontend. Run npm --prefix frontend run build or use Docker.');
+  }
+  const bcrypt = require('bcryptjs');
+  const demo = db.prepare('SELECT password_hash FROM users WHERE active=1').all()
+    .some(user => bcrypt.compareSync('password123', user.password_hash));
+  if (demo) throw new Error('Production startup refused: an active account still uses the demo password. Reset it before deployment.');
+}
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+app.get('/api/ready', (req, res) => {
+  try { db.prepare('SELECT 1').get(); res.json({ ok: true }); }
+  catch { res.status(503).json({ ok: false }); }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/cases", caseRoutes);
@@ -38,14 +52,19 @@ if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
   app.use(express.static(frontendDist));
   app.get('*', (req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
 }
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+let reminderTimer;
+function runDeadlineCheck() {
+  try { require('./services/deadlines').checkDeadlines(); }
+  catch (error) { console.error(JSON.stringify({ event: 'deadline_check_failed', message: error.message })); }
+}
+const server = app.listen(PORT, () => {
   console.log(`Nib backend running on http://localhost:${PORT}`);
   if (seedDemo) console.log("Demo accounts enabled for development.");
-  const { checkDeadlines } = require("./services/deadlines");
-  checkDeadlines();
-  const reminderTimer = setInterval(checkDeadlines, 60 * 60 * 1000);
+  runDeadlineCheck();
+  reminderTimer = setInterval(runDeadlineCheck, 60 * 60 * 1000);
   reminderTimer.unref();
   const { isConfigured } = require("./services/email");
   console.log(
@@ -54,3 +73,18 @@ app.listen(PORT, () => {
       : "Email: no SMTP configured — notifications are logged to email_log, not sent (see backend/.env.example)"
   );
 });
+server.requestTimeout = 120000;
+server.headersTimeout = 30000;
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(JSON.stringify({ event: 'shutdown', signal }));
+  clearInterval(reminderTimer);
+  const timeout = setTimeout(() => process.exit(1), 10000);
+  timeout.unref();
+  server.close(() => { db.close(); process.exit(0); });
+  server.closeIdleConnections?.();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

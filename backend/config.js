@@ -8,6 +8,7 @@ if (production && process.env.SEED_DEMO === "true") {
   throw new Error("Demo seeding is disabled in production.");
 }
 module.exports = {
+  production,
   SECRET: configuredSecret || "nib-dev-secret-change-me",
   seedDemo: !production && process.env.SEED_DEMO === "true",
 };

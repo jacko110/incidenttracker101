@@ -3,6 +3,7 @@ const path = require("path");
 
 const db = new Database(process.env.DATABASE_PATH || path.join(__dirname, "nib.db"));
 db.pragma("journal_mode = WAL");
+db.pragma('busy_timeout = 5000');
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   active INTEGER NOT NULL DEFAULT 1,
   email TEXT,
   email_notifications INTEGER NOT NULL DEFAULT 1,
+  auth_version INTEGER NOT NULL DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -130,6 +132,9 @@ CREATE TABLE IF NOT EXISTS case_links (
 );
 `);
 
+if (!db.prepare('PRAGMA table_info(users)').all().some(column => column.name === 'auth_version')) {
+  db.exec('ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0');
+}
 // Safe migration in case an older nib.db already exists without these columns
 const newColumns = [
   "rejected_by TEXT",

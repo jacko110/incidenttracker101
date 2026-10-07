@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   active BOOLEAN NOT NULL DEFAULT TRUE,
   email TEXT,
   email_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+  auth_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Pencil, Save, X, UserPlus, XCircle, History, Paperclip, Plus,
+  Pencil, Save, X, UserPlus, XCircle, History, Paperclip, Plus, Download,
 } from "lucide-react";
 import { Panel } from "../components/Panel";
 import { StatusPill, RejectedByPill, CaseId } from "../components/StatusPill";
@@ -38,6 +38,21 @@ export default function CaseDetail() {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  async function exportReport() {
+    setExporting(true);
+    setError('');
+    try {
+      const blob = await api.exportCaseReport(token, id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Nib-case-${String(id).padStart(4, '0')}-report.docx`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { setError(error.message); }
+    finally { setExporting(false); }
+  }
 
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
@@ -253,6 +268,7 @@ export default function CaseDetail() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button onClick={exportReport} disabled={exporting || editing} className="flex items-center gap-2 text-xs bg-cyan text-onaccent font-semibold px-3 py-2 rounded-lg disabled:opacity-50"><Download size={14} />{exporting ? 'Exporting…' : 'Export report (.docx)'}</button>
             {editing ? (
               <>
                 <button

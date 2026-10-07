@@ -6,13 +6,15 @@ const { SECRET } = require("../config");
 // deactivating someone mid-session locks them out immediately rather than
 // waiting for their token to expire (up to 8h otherwise).
 function verifyAndAttachUser(token, req) {
-  const payload = jwt.verify(token, SECRET); // throws if invalid/expired
-  const dbUser = db.prepare("SELECT id, username, role, active FROM users WHERE id = ?").get(payload.id);
+  const payload = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
+  if (!Number.isSafeInteger(payload.id) || payload.id < 1) throw new Error('Invalid token subject');
+  const dbUser = db.prepare("SELECT id, username, role, active, auth_version FROM users WHERE id = ?").get(payload.id);
   if (!dbUser || dbUser.active === 0) {
     const err = new Error("Account deactivated");
     err.deactivated = true;
     throw err;
   }
+  if ((payload.auth_version ?? 0) !== dbUser.auth_version) throw new Error('Session revoked');
   req.user = dbUser;
 }
 

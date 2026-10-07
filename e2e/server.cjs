@@ -6,7 +6,7 @@ Object.assign(process.env, {
   DATABASE_PATH: path.join(temporary, 'nib.db'),
   UPLOAD_DIR: temporary,
   JWT_SECRET: 'nib-browser-test-secret-not-for-production',
-  SMTP_HOST: '', SEED_DEMO: 'false', NODE_ENV: 'test', PORT: '4015',
+  SMTP_HOST: '', SEED_DEMO: 'false', NODE_ENV: process.env.NIB_E2E_PRODUCTION === 'true' ? 'production' : 'test', PORT: '4015',
 });
 const db = require('../backend/db');
 const bcrypt = require('../backend/node_modules/bcryptjs');

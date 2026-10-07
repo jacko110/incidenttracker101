@@ -9,7 +9,8 @@ const router = express.Router();
 
 router.post("/login", loginRateLimit, (req, res) => {
   const { username, password } = req.body || {};
-  if (!username || !password) {
+  if (typeof username !== 'string' || !username.trim() || username.length > 100 ||
+      typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) {
     return res.status(400).json({ error: "Username and password required" });
   }
   const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
@@ -22,7 +23,7 @@ router.post("/login", loginRateLimit, (req, res) => {
   }
   clearAttempts(req);
   const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role },
+    { id: user.id, username: user.username, role: user.role, auth_version: user.auth_version },
     SECRET,
     { expiresIn: "8h" }
   );
@@ -42,6 +43,8 @@ router.get("/me", requireAuth, (req, res) => {
 // here, only through the admin-only /api/users routes.
 router.patch("/me", requireAuth, (req, res) => {
   const { email, email_notifications } = req.body || {};
+  if (email !== undefined && (typeof email !== 'string' || email.length > 254)) return res.status(400).json({ error: 'Invalid email' });
+  if (email_notifications !== undefined && typeof email_notifications !== 'boolean') return res.status(400).json({ error: 'email_notifications must be true or false' });
   db.prepare(
     `UPDATE users SET
       email = COALESCE(?, email),

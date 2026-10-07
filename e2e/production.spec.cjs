@@ -1,0 +1,34 @@
+const { test, expect } = require('@playwright/test');
+test('built production frontend works under CSP with login, dark mode, report and evidence download', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => { window.cspViolations = []; document.addEventListener('securitypolicyviolation', event => window.cspViolations.push(event.violatedDirective)); });
+  await page.goto('/login');
+  await page.getByLabel('Username', { exact: true }).fill('admin');
+  await page.getByLabel('Password', { exact: true }).fill('browser-password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  const incident = await page.evaluate(async () => {
+    const token = sessionStorage.getItem('nib_token');
+    const form = new FormData(); form.append('files', new Blob(['Production evidence'], { type: 'text/plain' }), 'evidence.txt');
+    const uploaded = await fetch('/api/uploads', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+    if (!uploaded.ok) throw new Error('Upload failed');
+    const { files } = await uploaded.json();
+    const res = await fetch('/api/cases', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Production browser incident', iocs: [{ type: 'Domain', value: 'production.invalid', documents: files }] }) });
+    if (!res.ok) throw new Error('Create failed');
+    return res.json();
+  });
+  await page.goto(`/cases/${incident.id}`);
+  await expect(page.getByRole('heading', { name: 'Production browser incident' })).toBeVisible();
+  const report = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export report (.docx)', exact: true }).click();
+  expect((await report).suggestedFilename()).toMatch(/report\.docx$/);
+  const evidence = page.waitForEvent('download');
+  await page.getByRole('link', { name: 'evidence.txt', exact: true }).click();
+  expect(await (await evidence).failure()).toBeNull();
+  const violations = await page.evaluate(() => window.cspViolations || []);
+  expect(violations).toEqual([]);
+  expect(errors).toEqual([]);
+});

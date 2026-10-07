@@ -6,6 +6,10 @@
   "private": true,
   "scripts": {
     "test:e2e": "playwright test",
-    "verify": "npm --prefix backend test && npm --prefix frontend test && npm --prefix frontend run build && npm run test:e2e"
+    "verify": "npm --prefix frontend run build && npm --prefix backend test && npm --prefix frontend test && npm run test:e2e && npm run test:production",
+    "test:production": "playwright test --config playwright.production.config.cjs"
+  },
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0"
   }
 }

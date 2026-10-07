@@ -2,20 +2,22 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const crypto = require("crypto");
-const { requireAuth, requireAuthFromHeaderOrQuery, SECRET } = require("../middleware/auth");
+const { requireAuth, requireAuthFromHeaderOrQuery } = require("../middleware/auth");
 
 const router = express.Router();
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "..", "uploads");
+const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, "..", "uploads"));
+require('fs').mkdirSync(UPLOAD_DIR, { recursive: true });
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
 const MAX_FILES = 10;
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
+    const originalExt = path.extname(file.originalname);
+    const ext = /^\.[a-zA-Z0-9]{1,10}$/.test(originalExt) ? originalExt.toLowerCase() : '.bin';
     const safeBase = path
-      .basename(file.originalname, ext)
+      .basename(file.originalname, originalExt)
       .replace(/[^a-zA-Z0-9_-]/g, "_")
       .slice(0, 40);
     const unique = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}`;
@@ -25,7 +27,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES, fields: 20, parts: 30, fieldSize: 65536, fieldNameSize: 100 },
 });
 
 // POST /api/uploads  (multipart/form-data, field name: files) — requires login
@@ -65,6 +67,11 @@ router.get("/file/:filename", requireAuthFromHeaderOrQuery, (req, res) => {
     return res.status(400).json({ error: "Invalid filename" });
   }
   const filePath = path.join(UPLOAD_DIR, filename);
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  // Evidence may contain active content; only raster images render inline.
+  if (!/\.(png|jpe?g|gif|webp)$/i.test(filename)) res.attachment(filename);
   res.sendFile(filePath, (err) => {
     if (err && !res.headersSent) {
       res.status(404).json({ error: "File not found" });

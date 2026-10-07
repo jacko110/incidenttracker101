@@ -14,6 +14,20 @@ async function newCase(page, title) {
     return response.json();
   }, title);
 }
+test('case report downloads a Word document from the case page', async ({ page }) => {
+  await login(page);
+  const incident = await newCase(page, 'Word report browser case');
+  await page.goto(`/cases/${incident.id}`);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export report (.docx)', exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(`Nib-case-${String(incident.id).padStart(4, '0')}-report.docx`);
+  const fs = require('node:fs');
+  const JSZip = require('../backend/node_modules/jszip');
+  const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+  expect(await zip.file('word/document.xml').async('string')).toContain('Word report browser case');
+  await expect(page.getByRole('button', { name: 'Export report (.docx)', exact: true })).toBeEnabled();
+});
 test('sidebar hides user identity and dark mode persists across refresh', async ({ page }) => {
   await login(page, 'admin');
   const sidebar = page.getByRole('complementary');
@@ -208,7 +222,7 @@ test('SLA policy creates automatic deadlines and supports explicit manual overri
   await page.getByRole('checkbox', { name: 'High', exact: true }).check();
   await page.getByLabel('High response hours', { exact: true }).fill('6');
   await page.getByRole('button', { name: 'Save SLA policies' }).click();
-  await expect(page.getByRole('status')).toContainText('SLA policies saved');
+  await expect(page.getByRole('status').filter({ hasText: 'SLA policies saved' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('checkbox', { name: 'High', exact: true })).toBeChecked();
   const incident = await page.evaluate(async () => {

@@ -1,59 +1,34 @@
-// Lightweight in-memory rate limiter for login attempts. Keyed by IP+username
-// so one bad actor guessing one account doesn't lock out everyone on the
-// same NAT/office IP, and one attacker spraying usernames from one IP still
-// gets throttled per attempt.
-//
-// This resets on server restart and doesn't share state across instances —
-// fine for a single-process demo, not sufficient for a multi-instance
-// production deployment (use Redis-backed limiting there instead).
-
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+// Bounded single-process limiter: account guesses and username spraying.
+const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
-
-const attempts = new Map(); // key -> { count, firstAttemptAt }
-
-function keyFor(req) {
-  const ip = req.ip || req.connection?.remoteAddress || "unknown";
-  const username = (req.body?.username || "").toLowerCase();
-  return `${ip}:${username}`;
+const MAX_IP_REQUESTS = 60;
+const MAX_KEYS = 10000;
+const attempts = new Map();
+const ipRequests = new Map();
+function ipFor(req) { return req.ip || req.socket?.remoteAddress || 'unknown'; }
+function keyFor(req) { return `${ipFor(req)}:${typeof req.body?.username === 'string' ? req.body.username.toLowerCase().slice(0, 100) : ''}`; }
+function expire(map, now) { for (const [key, value] of map) if (now - value.firstAttemptAt >= WINDOW_MS) map.delete(key); }
+function blocked(res, entry, now) {
+  const seconds = Math.max(1, Math.ceil((WINDOW_MS - (now - entry.firstAttemptAt)) / 1000));
+  res.set('Retry-After', seconds);
+  return res.status(429).json({ error: `Too many login attempts. Try again in ${Math.ceil(seconds / 60)} minute(s).` });
 }
-
 function loginRateLimit(req, res, next) {
-  const key = keyFor(req);
   const now = Date.now();
-  const entry = attempts.get(key);
-
-  if (entry && now - entry.firstAttemptAt > WINDOW_MS) {
-    attempts.delete(key);
+  expire(attempts, now); expire(ipRequests, now);
+  const key = keyFor(req), ip = ipFor(req);
+  const account = attempts.get(key), current = ipRequests.get(ip);
+  if (account?.count >= MAX_ATTEMPTS) return blocked(res, account, now);
+  if (current?.count >= MAX_IP_REQUESTS) return blocked(res, current, now);
+  if ((!current && ipRequests.size >= MAX_KEYS) || (!account && attempts.size >= MAX_KEYS)) {
+    res.set('Retry-After', 60); return res.status(429).json({ error: 'Login temporarily busy. Try again shortly.' });
   }
-
-  const current = attempts.get(key);
-  if (current && current.count >= MAX_ATTEMPTS) {
-    const retryAfterMs = WINDOW_MS - (now - current.firstAttemptAt);
-    res.set("Retry-After", Math.ceil(retryAfterMs / 1000));
-    return res.status(429).json({
-      error: `Too many login attempts. Try again in ${Math.ceil(retryAfterMs / 60000)} minute(s).`,
-    });
-  }
-
+  ipRequests.set(ip, { count: (current?.count || 0) + 1, firstAttemptAt: current?.firstAttemptAt || now });
   next();
 }
-
-// Call this only when a login attempt actually fails (wrong password/username).
-// Successful logins should call clearAttempts() instead.
 function recordFailedAttempt(req) {
-  const key = keyFor(req);
-  const now = Date.now();
-  const current = attempts.get(key);
-  if (current && now - current.firstAttemptAt <= WINDOW_MS) {
-    current.count += 1;
-  } else {
-    attempts.set(key, { count: 1, firstAttemptAt: now });
-  }
+  const key = keyFor(req), now = Date.now(), current = attempts.get(key);
+  attempts.set(key, { count: (current?.count || 0) + 1, firstAttemptAt: current?.firstAttemptAt || now });
 }
-
-function clearAttempts(req) {
-  attempts.delete(keyFor(req));
-}
-
+function clearAttempts(req) { attempts.delete(keyFor(req)); }
 module.exports = { loginRateLimit, recordFailedAttempt, clearAttempts };

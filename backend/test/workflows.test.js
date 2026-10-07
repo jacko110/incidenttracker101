@@ -276,7 +276,8 @@ test('admin account management creates usable accounts, resets passwords and rev
   tokens.managed = (await request('/auth/login', { role: null, method: 'POST', body })).token;
   await request(`/users/${user.id}`, { role: 'admin', method: 'PATCH', body: { password: 'replacement-password', role: 'SOC_ANALYST' } });
   await request('/auth/login', { role: null, method: 'POST', body, status: 401 });
-  await request('/auth/login', { role: null, method: 'POST', body: { username: body.username, password: 'replacement-password' } });
+  await request('/auth/me', { role: 'managed', status: 401 });
+  tokens.managed = (await request('/auth/login', { role: null, method: 'POST', body: { username: body.username, password: 'replacement-password' } })).token;
   assert.equal((await request('/auth/me', { role: 'managed' })).user.role, 'SOC_ANALYST');
   await request(`/users/${user.id}`, { role: 'admin', method: 'PATCH', body: { active: false } });
   assert.equal((await request('/auth/me', { role: 'managed', status: 403 })).code, 'ACCOUNT_DEACTIVATED');

@@ -12,9 +12,37 @@ jobs:
       - run: npm ci --prefix backend
       - run: npm ci --prefix frontend
       - run: npx playwright install --with-deps chromium
+      - run: npm audit --prefix backend --audit-level=moderate
+      - run: npm audit --prefix frontend --audit-level=moderate
       - run: npm run verify
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: browser-failures
           path: test-results/
+
+  container:
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: isolated-ci-secret-with-more-than-thirty-two-characters
+      DOMAIN: incidents.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f compose.yaml -f compose.https.yaml config --quiet
+      - run: docker run --rm -e DOMAIN=incidents.example.com -v "$PWD/deployment/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+      - run: docker compose up -d --build --wait
+      - run: docker compose exec -T -e ADMIN_USERNAME=ci-admin -e ADMIN_PASSWORD=isolated-ci-admin-password nib node create-admin.js
+      - run: docker compose exec -T nib node - create < deployment/container-smoke.cjs
+      - run: sh deployment/backup.sh /tmp/nib-backups
+      - run: docker compose restart nib && docker compose up -d --wait
+      - run: docker compose exec -T nib node - check < deployment/container-smoke.cjs
+      # This is a disposable CI volume; simulate loss and restore the backup.
+      - run: docker compose down -v
+      - run: sh deployment/restore.sh /tmp/nib-backups/*.tar.gz
+      - run: docker compose up -d --wait
+      - run: docker compose exec -T nib node - check < deployment/container-smoke.cjs
+      - run: docker compose logs
+        if: failure()
+      - run: docker compose down -v
+        if: always()

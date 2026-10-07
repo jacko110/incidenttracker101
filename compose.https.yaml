@@ -1,0 +1,34 @@
+services:
+  nib:
+    networks:
+      production:
+        ipv4_address: 172.30.50.3
+    environment:
+      TRUST_PROXY: 172.30.50.2/32
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in the root .env file}
+    volumes:
+      - ./deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      nib:
+        condition: service_healthy
+    networks:
+      production:
+        ipv4_address: 172.30.50.2
+networks:
+  production:
+    ipam:
+      config:
+        - subnet: 172.30.50.0/24
+volumes:
+  caddy_data:
+  caddy_config:
