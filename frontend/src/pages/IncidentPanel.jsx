@@ -138,10 +138,10 @@ export default function IncidentPanel() {
         {loading ? <div role="status">Loading incidents…</div> : error ? null : filtered.length === 0 ? (
           <div className="text-faint text-sm py-16 text-center font-mono">No incidents in this view.</div>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-line">
+          <div className="overflow-x-auto rounded-xl border border-line">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-muted border-b border-line font-mono text-[10px] uppercase tracking-widest bg-panel2">
+                <tr className="text-left text-muted border-b border-line font-body text-xs font-medium bg-panel2">
                   <th className="py-2.5 px-4">ID</th>
                   <th className="py-2.5 px-4">Title</th>
                   <th className="py-2.5 px-4">Attack type</th>

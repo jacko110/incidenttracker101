@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 
 const inputClass =
-  "w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber appearance-none";
+  "w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan appearance-none";
 
 const ASSETS = ["Web Server 01", "Web Server 02", "DB Server 01", "Mail Server", "VPN Gateway", "Domain Controller"];
 const COUNTRIES = ["China", "United States", "Russia", "Brazil", "Germany", "India", "Vietnam", "Iran", "North Korea", "Unknown"];
@@ -279,7 +279,7 @@ export default function CreateIncident() {
       </div>
 
       <div className="p-6 max-w-5xl">
-        <div className="bg-panel border border-line rounded-md p-6">
+        <div className="bg-panel border border-line rounded-xl p-6">
           {error && (
             <div className="mb-5 text-sm text-thread bg-thread/10 border border-thread/30 rounded px-3 py-2">
               {error}
@@ -388,7 +388,7 @@ export default function CreateIncident() {
                             : [...form.httpStatus, c]
                         )
                       }
-                      className={`text-[11px] px-2 py-1 rounded-md border ${
+                      className={`text-[11px] px-2 py-1 rounded-xl border ${
                         form.httpStatus.includes(c)
                           ? "border-amber bg-amber/15 text-amber"
                           : "border-line text-muted hover:bg-panel2"
@@ -439,7 +439,7 @@ export default function CreateIncident() {
                 </div>
               )}
 
-              <div className="border border-line rounded-md p-5">
+              <div className="border border-line rounded-xl p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                   <Field label="IOC TYPE">
                     <Select
@@ -459,7 +459,7 @@ export default function CreateIncident() {
                   </Field>
 
                   <div>
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2 block">COUNT</label>
+                    <label className="font-body text-xs font-medium text-muted mb-2 block">COUNT</label>
                     <input
                       type="number"
                       value={draft.count}
@@ -469,7 +469,7 @@ export default function CreateIncident() {
                     />
                   </div>
                   <div>
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2 block">IOC IMAGES</label>
+                    <label className="font-body text-xs font-medium text-muted mb-2 block">IOC IMAGES</label>
                     <label className={`flex flex-col items-center justify-center gap-1.5 border border-dashed border-line rounded py-4 transition-colors ${uploadingImages ? "opacity-60" : "cursor-pointer hover:border-amber/50"}`}>
                       <UploadCloud size={18} className="text-faint" />
                       <span className="text-xs text-muted">{uploadingImages ? "Uploading..." : "Upload"}</span>
@@ -500,7 +500,7 @@ export default function CreateIncident() {
                   </div>
 
                   <div>
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2 block">PERCENTAGE</label>
+                    <label className="font-body text-xs font-medium text-muted mb-2 block">PERCENTAGE</label>
                     <input
                       type="number"
                       value={draft.percentage}
@@ -510,7 +510,7 @@ export default function CreateIncident() {
                     />
                   </div>
                   <div>
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2 block">RELATED DOCUMENTS</label>
+                    <label className="font-body text-xs font-medium text-muted mb-2 block">RELATED DOCUMENTS</label>
                     <label className={`flex items-center justify-center gap-1.5 border border-line rounded py-2 transition-colors text-sm text-paper ${uploadingDocs ? "opacity-60" : "cursor-pointer hover:bg-panel2"}`}>
                       <Upload size={14} />
                       {uploadingDocs ? "Uploading..." : "Upload Files"}
@@ -541,7 +541,7 @@ export default function CreateIncident() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-2 block">DESCRIPTION</label>
+                    <label className="font-body text-xs font-medium text-muted mb-2 block">DESCRIPTION</label>
                     <textarea
                       value={draft.description}
                       onChange={(e) => setDraftField("description", e.target.value)}
@@ -706,7 +706,7 @@ export default function CreateIncident() {
 function ReviewSection({ title, children }) {
   return (
     <div>
-      <h3 className="font-mono text-[10px] uppercase tracking-widest text-faint mb-3">{title}</h3>
+      <h3 className="font-body text-xs font-medium text-faint mb-3">{title}</h3>
       <div className="space-y-2.5">{children}</div>
     </div>
   );

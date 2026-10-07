@@ -91,7 +91,7 @@ export default function CaseList() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-muted border-b border-line font-mono text-[10px] uppercase tracking-widest">
+                <tr className="text-left text-muted border-b border-line font-body text-xs font-medium">
                   <th className="py-2 pr-4">ID</th>
                   <th className="py-2 pr-4">Title</th>
                   <th className="py-2 pr-4">Attack type</th>

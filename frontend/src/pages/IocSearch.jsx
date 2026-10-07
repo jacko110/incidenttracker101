@@ -65,7 +65,7 @@ export default function IocSearch() {
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+          className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
         >
           <option value="">All types</option>
           {types.map((t) => (

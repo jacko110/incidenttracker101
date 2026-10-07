@@ -235,24 +235,24 @@ export default function CaseDetail() {
       )}
 
       <Panel>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-5">
+          <div className="w-full flex-1 min-w-0">
             <CaseId id={item.id} className="text-sm" />
             {editing ? (
               <input
                 value={editForm.title}
                 onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full mt-1.5 bg-panel2 border border-line rounded px-3 py-2 text-lg text-paper outline-none focus:border-amber transition-colors"
+                className="w-full mt-1.5 bg-panel2 border border-line rounded px-3 py-2 text-lg text-paper outline-none focus:border-cyan transition-colors"
               />
             ) : (
-              <h2 className="font-display text-lg text-paper font-semibold mt-0.5">{item.title}</h2>
+              <h2 className="font-display text-xl sm:text-2xl text-paper font-semibold mt-2 break-words">{item.title}</h2>
             )}
             {item.rejected_by && (
               <div className="mt-2"><RejectedByPill label={item.rejected_by} /></div>
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {editing ? (
               <>
                 <button
@@ -333,7 +333,7 @@ export default function CaseDetail() {
         )}
 
         <div className="mt-5">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-2">Status</div>
+          <div className="font-body text-xs font-medium text-faint mb-2">Status</div>
           <div className="flex flex-wrap gap-2">
             {STATUSES.map((s) => (
               <button
@@ -353,7 +353,7 @@ export default function CaseDetail() {
         </div>
 
         <div className="mt-5">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-2 flex items-center gap-1.5">
+          <div className="font-body text-xs font-medium text-faint mb-2 flex items-center gap-1.5">
             <UserPlus size={12} /> Assigned to
           </div>
           {canAssign(user.role) ? (
@@ -361,7 +361,7 @@ export default function CaseDetail() {
               value={item.assigned_to || ""}
               onChange={handleAssign}
               disabled={assigning}
-              className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber disabled:opacity-50 transition-colors"
+              className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan disabled:opacity-50 transition-colors"
             >
               <option value="">Unassigned</option>
               {users.map((u) => (
@@ -376,7 +376,7 @@ export default function CaseDetail() {
         </div>
 
         <div className="mt-5 border-t border-line pt-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-2">Response deadline</div>
+          <div className="font-body text-xs font-medium text-faint mb-2">Response deadline</div>
           {canAssign(user.role) ? (
             <form onSubmit={saveDeadline} className="flex flex-wrap items-center gap-2">
               <input
@@ -384,7 +384,7 @@ export default function CaseDetail() {
                 type="datetime-local"
                 value={deadlineInput}
                 onChange={(e) => setDeadlineInput(e.target.value)}
-                className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+                className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
               />
               <button type="submit" disabled={savingDeadline} className="text-xs bg-cyan text-ink font-semibold px-3 py-2 rounded disabled:opacity-50">
                 {savingDeadline ? "Saving…" : "Save deadline"}
@@ -494,7 +494,7 @@ export default function CaseDetail() {
 
       {showLinkModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-panel border border-line rounded-md w-full max-w-sm p-5">
+          <div className="bg-panel border border-line rounded-xl w-full max-w-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display text-paper font-semibold text-sm">Link to another case</h3>
               <button onClick={() => setShowLinkModal(false)} className="text-faint hover:text-paper transition-colors">
@@ -503,13 +503,13 @@ export default function CaseDetail() {
             </div>
             <form onSubmit={submitLink} className="space-y-3">
               <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">Case ID</label>
+                <label className="font-body text-xs font-medium text-muted mb-1.5 block">Case ID</label>
                 <input
                   type="number"
                   value={linkTargetId}
                   onChange={(e) => setLinkTargetId(e.target.value)}
                   placeholder="e.g. 147"
-                  className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+                  className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
                   autoFocus
                 />
                 <p className="text-[11px] text-faint mt-1">
@@ -517,12 +517,12 @@ export default function CaseDetail() {
                 </p>
               </div>
               <div>
-                <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">Why are these related? (optional)</label>
+                <label className="font-body text-xs font-medium text-muted mb-1.5 block">Why are these related? (optional)</label>
                 <input
                   value={linkNote}
                   onChange={(e) => setLinkNote(e.target.value)}
                   placeholder="e.g. Same C2 infrastructure"
-                  className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+                  className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-1">
@@ -564,7 +564,7 @@ export default function CaseDetail() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add a note..."
-            className="flex-1 bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+            className="flex-1 bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
           />
           <button
             type="submit"
@@ -602,11 +602,11 @@ export default function CaseDetail() {
 function EditField({ label, value, onChange }) {
   return (
     <div>
-      <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">{label}</label>
+      <label className="font-body text-xs font-medium text-muted mb-1.5 block">{label}</label>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-panel2 border border-line rounded px-2.5 py-1.5 text-sm text-paper outline-none focus:border-amber transition-colors"
+        className="w-full bg-panel2 border border-line rounded px-2.5 py-1.5 text-sm text-paper outline-none focus:border-cyan transition-colors"
       />
     </div>
   );
@@ -615,12 +615,12 @@ function EditField({ label, value, onChange }) {
 function EditTextarea({ label, value, onChange }) {
   return (
     <div>
-      <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">{label}</label>
+      <label className="font-body text-xs font-medium text-muted mb-1.5 block">{label}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
-        className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber resize-y transition-colors"
+        className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan resize-y transition-colors"
       />
     </div>
   );
@@ -629,7 +629,7 @@ function EditTextarea({ label, value, onChange }) {
 function ReadField({ label, value }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-1">{label}</div>
+      <div className="font-body text-xs font-medium text-faint mb-1">{label}</div>
       <div className="text-paper whitespace-pre-wrap">{value}</div>
     </div>
   );
@@ -638,7 +638,7 @@ function ReadField({ label, value }) {
 function ReadStat({ label, value, mono }) {
   return (
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-widest text-faint mb-1">{label}</div>
+      <div className="font-body text-xs font-medium text-faint mb-1">{label}</div>
       <div className={`text-paper ${mono ? "font-mono text-[13px]" : ""}`}>{value || "—"}</div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Bell, HelpCircle, Menu } from "lucide-react";
+import { Search, Bell, Menu } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
 
@@ -62,17 +62,17 @@ export default function Topbar({ onToggleSidebar, crumb }) {
   }
 
   return (
-    <header className="h-14 border-b border-line flex items-center justify-between px-3 md:px-6 shrink-0 bg-ink">
-      <div className="flex items-center gap-3 font-mono text-[11px] tracking-widest uppercase">
+    <header className="h-[72px] border-b border-line flex items-center justify-between px-3 md:px-6 shrink-0 bg-ink/95">
+      <div className="flex items-center gap-3 font-body text-xs font-medium">
         <button aria-label="Toggle navigation" onClick={onToggleSidebar} className="text-muted hover:text-paper mr-1 transition-colors">
           <Menu size={17} />
         </button>
-        <span className="hidden sm:inline text-faint">board /</span>
+        <span className="hidden sm:inline text-faint">Workspace /</span>
         <span className="text-paper normal-case tracking-normal font-body text-sm">{crumb}</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 bg-panel border border-line rounded px-3 py-1.5 w-52">
+        <div className="hidden md:flex items-center gap-2 bg-panel border border-line rounded-xl px-3 py-1.5 w-64">
           <Search size={13} className="text-faint" />
           <form onSubmit={(event) => {
             event.preventDefault();
@@ -107,7 +107,7 @@ export default function Topbar({ onToggleSidebar, crumb }) {
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] bg-panel border border-line rounded-md shadow-xl z-50 overflow-hidden">
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] bg-panel border border-line rounded-xl shadow-xl z-50 overflow-hidden">
               <div className="px-4 py-2.5 border-b border-line font-display text-sm text-paper font-semibold tracking-wide">
                 Notifications
               </div>
@@ -133,22 +133,14 @@ export default function Topbar({ onToggleSidebar, crumb }) {
           )}
         </div>
 
-        <IconButton icon={HelpCircle} />
         <button
+          aria-label="My profile"
           onClick={() => navigate("/profile")}
-          className="w-8 h-8 rounded-full bg-panel2 border border-line hover:border-amber flex items-center justify-center transition-colors font-mono text-[11px] text-amber"
+          className="w-8 h-8 rounded-full bg-panel2 border border-line hover:border-amber flex items-center justify-center transition-colors font-mono text-[11px] text-cyan"
         >
           {initials}
         </button>
       </div>
     </header>
-  );
-}
-
-function IconButton({ icon: Icon }) {
-  return (
-    <button className="w-8 h-8 rounded flex items-center justify-center text-muted hover:bg-panel2 hover:text-paper transition-colors">
-      <Icon size={16} />
-    </button>
   );
 }

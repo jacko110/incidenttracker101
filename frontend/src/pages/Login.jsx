@@ -35,36 +35,39 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-ink flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="login-shell min-h-screen w-full flex items-center justify-center px-4">
+      <div className="w-full max-w-[440px]">
         <div className="text-center mb-8">
-          <div className="font-stamp text-2xl text-paper">
-            Ni<span className="text-thread">b</span>
+          <div className="font-display text-3xl font-semibold tracking-tight text-paper">
+            Nib<span className="text-cyan">.</span>
           </div>
-          <div className="font-mono text-[10px] tracking-widest uppercase text-faint mt-1.5">
-            Incident tracking system
+          <div className="font-body text-xs font-medium text-faint mt-1.5">
+            Your incident workspace
           </div>
         </div>
 
+        <h1 className="text-2xl font-semibold text-center mb-2">Welcome back</h1>
+        <p className="text-sm text-muted text-center mb-7">Sign in to continue your investigations.</p>
         <form
           onSubmit={handleSubmit}
-          className="bg-panel border border-line rounded-md p-6 space-y-4"
+          className="bg-panel border border-line rounded-2xl p-7 sm:p-9 space-y-5"
         >
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">Username</label>
+            <label className="font-body text-xs font-medium text-muted mb-1.5 block">Username</label>
             <input
+              aria-label="Username" autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
             />
           </div>
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 block">Password</label>
+            <label className="font-body text-xs font-medium text-muted mb-1.5 block">Password</label>
             <input
-              type="password"
+              type="password" aria-label="Password" autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
             />
           </div>
 

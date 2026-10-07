@@ -39,13 +39,13 @@ export default function Profile() {
           </div>
           <div>
             <div className="text-paper font-medium">{user.username}</div>
-            <div className="font-mono text-[10px] tracking-widest uppercase text-faint mt-0.5">{roleLabel(user.role)}</div>
+            <div className="font-body text-xs font-medium text-faint mt-0.5">{roleLabel(user.role)}</div>
           </div>
         </div>
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="font-mono text-[10px] uppercase tracking-widest text-muted mb-1.5 flex items-center gap-1.5">
+            <label className="font-body text-xs font-medium text-muted mb-1.5 flex items-center gap-1.5">
               <Mail size={12} /> Contact email
             </label>
             <input
@@ -53,7 +53,7 @@ export default function Profile() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
             />
             <p className="text-[11px] text-faint mt-1">
               Used for case assignment and critical incident alerts.

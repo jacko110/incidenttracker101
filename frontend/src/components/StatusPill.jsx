@@ -5,18 +5,18 @@ import React from "react";
 // moss(green) = resolved. Reused everywhere a status badge appears so the
 // meaning of each color stays consistent app-wide.
 export const STATUS_COLOR = {
-  "Under Review": "#D9A244",
-  "In Progress": "#4A93A8",
-  Completed: "#5C9068",
-  Attempt: "#D9A244",
-  Rejected: "#C1443A",
+  "Under Review": "#D8B574",
+  "In Progress": "#A5B4FC",
+  Completed: "#89B8A0",
+  Attempt: "#D8B574",
+  Rejected: "#E58C91",
 };
 
 export function StatusPill({ status, className = "" }) {
-  const color = STATUS_COLOR[status] || "#8B8981";
+  const color = STATUS_COLOR[status] || "#A4A9B5";
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border ${className}`}
+      className={`inline-flex items-center gap-1.5 font-body text-xs font-medium px-2.5 py-1 rounded-full border ${className}`}
       style={{ color, borderColor: `${color}55`, backgroundColor: `${color}14` }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -30,8 +30,8 @@ export function StatusPill({ status, className = "" }) {
 export function RejectedByPill({ label, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-stamp text-[10px] uppercase tracking-wide px-2 py-0.5 rounded border ${className}`}
-      style={{ color: "#C1443A", borderColor: "#C1443A55", backgroundColor: "#C1443A14" }}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded border ${className}`}
+      style={{ color: "#E58C91", borderColor: "#E58C9155", backgroundColor: "#E58C9114" }}
     >
       rejected · {label}
     </span>

@@ -77,7 +77,7 @@ function Layout({ children }) {
       <Sidebar open={sidebarOpen} counts={counts} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar onToggleSidebar={() => setSidebarOpen((o) => !o)} crumb={crumb} />
-        <main className="flex-1 overflow-y-auto p-6"><Suspense fallback={<div role="status">Loading page…</div>}>{children}</Suspense></main>
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8"><div className="max-w-[1600px] mx-auto"><Suspense fallback={<div role="status">Loading page…</div>}>{children}</Suspense></div></main>
       </div>
     </div>
   );

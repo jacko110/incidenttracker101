@@ -42,7 +42,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-      <div className="bg-panel border border-line rounded-md w-full max-w-sm p-5">
+      <div className="bg-panel border border-line rounded-xl w-full max-w-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-paper font-semibold text-sm">New User</h3>
           <button onClick={onClose} className="text-faint hover:text-paper">
@@ -55,7 +55,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
               autoFocus
             />
           </div>
@@ -65,7 +65,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
             />
           </div>
           <div>
@@ -73,7 +73,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>{roleLabel(r)}</option>
@@ -125,7 +125,7 @@ function ResetPasswordModal({ userRow, onClose, onSaved, token }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-      <div className="bg-panel border border-line rounded-md w-full max-w-sm p-5">
+      <div className="bg-panel border border-line rounded-xl w-full max-w-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-paper font-semibold text-sm">Reset password for {userRow.username}</h3>
           <button onClick={onClose} className="text-faint hover:text-paper">
@@ -139,7 +139,7 @@ function ResetPasswordModal({ userRow, onClose, onSaved, token }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber"
+              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
               autoFocus
             />
           </div>
@@ -269,7 +269,7 @@ export default function Users() {
                     value={u.role}
                     onChange={(e) => changeRole(u, e.target.value)}
                     disabled={busyId === u.id}
-                    className="bg-panel2 border border-line rounded-md px-2 py-1 text-xs text-paper outline-none focus:border-amber disabled:opacity-50"
+                    className="bg-panel2 border border-line rounded-xl px-2 py-1 text-xs text-paper outline-none focus:border-cyan disabled:opacity-50"
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>{roleLabel(r)}</option>

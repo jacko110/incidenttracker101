@@ -60,7 +60,7 @@ export default function Chat() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Message the team..."
-          className="flex-1 bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-amber transition-colors"
+          className="flex-1 bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
         />
         <button
           type="submit"
