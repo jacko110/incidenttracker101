@@ -64,7 +64,7 @@ export default function Chat() {
         />
         <button
           type="submit"
-          className="bg-cyan hover:brightness-110 text-ink text-sm font-semibold px-4 py-2 rounded transition-all"
+          className="bg-cyan hover:brightness-110 text-onaccent text-sm font-semibold px-4 py-2 rounded transition-all"
         >
           Send
         </button>

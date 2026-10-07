@@ -23,6 +23,28 @@ async function request(path, { method = "GET", body, token } = {}) {
 
 export const api = {
   slaPolicies: (token) => request('/sla', { token }),
+  slaPolicyHistory: (token, { severity, page, pageSize } = {}) => {
+    const params = new URLSearchParams();
+    if (severity) params.set('severity', severity);
+    if (page) params.set('page', page);
+    if (pageSize) params.set('pageSize', pageSize);
+    const query = params.toString();
+    return request('/sla/history' + (query ? '?' + query : ''), { token });
+  },
+  exportSlaHistory: async (token, severity) => {
+    const params = new URLSearchParams();
+    if (severity) params.set('severity', severity);
+    const query = params.toString();
+    const res = await fetch(`${BASE}/sla/history/export${query ? `?${query}` : ''}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      checkSession(res, data, token);
+      throw new Error(data.error || 'CSV export failed');
+    }
+    return res.blob();
+  },
   saveSlaPolicies: (token, policies) => request('/sla', { token, method: 'PUT', body: { policies } }),
   applySla: (token, id) => request(`/cases/${id}/sla`, { token, method: 'POST' }),
   playbooks: (token) => request('/playbooks', { token }),
@@ -93,6 +115,30 @@ export const api = {
   createUser: (token, body) => request("/users", { method: "POST", body, token }),
   updateUser: (token, id, body) => request(`/users/${id}`, { method: "PATCH", body, token }),
   emailLog: (token) => request("/users/email-log", { token }),
+  caseActivity: (token, filters = {}) => {
+    const params = new URLSearchParams();
+    for (const key of ['from', 'to', 'action', 'q', 'page', 'pageSize']) {
+      if (filters[key]) params.set(key, filters[key]);
+    }
+    const query = params.toString();
+    return request(`/audit/history${query ? `?${query}` : ''}`, { token });
+  },
+  exportCaseActivity: async (token, filters = {}) => {
+    const params = new URLSearchParams();
+    for (const key of ['from', 'to', 'action', 'q']) {
+      if (filters[key]) params.set(key, filters[key]);
+    }
+    const query = params.toString();
+    const res = await fetch(`${BASE}/audit/history/export${query ? `?${query}` : ''}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      checkSession(res, data, token);
+      throw new Error(data.error || 'Activity export failed');
+    }
+    return res.blob();
+  },
 
   // Cross-case IOC search
   searchIocs: (token, { q, type, page, pageSize } = {}) => {

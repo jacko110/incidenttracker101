@@ -97,7 +97,7 @@ export default function IncidentPanel() {
           </div>
           <button
             onClick={() => navigate("/incidents/new")}
-            className="flex items-center gap-1.5 bg-cyan hover:brightness-110 transition-all text-ink text-sm font-semibold px-4 py-2 rounded"
+            className="flex items-center gap-1.5 bg-cyan hover:brightness-110 transition-all text-onaccent text-sm font-semibold px-4 py-2 rounded"
           >
             <Plus size={15} /> Create case
           </button>

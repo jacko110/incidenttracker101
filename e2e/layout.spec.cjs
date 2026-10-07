@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-test('modern dark pages fit desktop and mobile viewports', async ({ page }, info) => {
+test('monochrome workspace fits desktop and mobile viewports', async ({ page }, info) => {
   test.setTimeout(60000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -20,7 +20,7 @@ test('modern dark pages fit desktop and mobile viewports', async ({ page }, info
   });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-    for (const route of ['/', '/cases', `/cases/${id}`, '/incidents/new', '/playbooks', '/sla', '/users', '/profile', '/iocs', '/archive', '/chat']) {
+    for (const route of ['/', '/cases', `/cases/${id}`, '/incidents/new', '/playbooks', '/sla', '/users', '/profile', '/iocs', '/archive', '/chat', '/audit']) {
       await page.goto(route);
       await expect(page.locator('main')).toBeVisible();
       await expect(page.locator('main').getByRole('status')).toHaveCount(0);

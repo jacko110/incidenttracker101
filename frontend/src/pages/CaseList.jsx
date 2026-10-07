@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams, Link } from "react-router-dom";
+import { Search, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Panel } from "../components/Panel";
 import { StatusPill, CaseId } from "../components/StatusPill";
 import { useAuth } from "../context/AuthContext";
@@ -14,7 +14,6 @@ export default function CaseList() {
   const status = params.get("status");
   const mineOnly = params.get("mine") === "1";
   const due = params.get("due");
-  const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -33,7 +32,7 @@ export default function CaseList() {
     }
   }, [params]);
 
-  useEffect(() => setPage(1), [status, mineOnly, debouncedSearch]);
+  useEffect(() => setPage(1), [status, mineOnly, due, debouncedSearch]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -59,11 +58,15 @@ export default function CaseList() {
   const title = due === "overdue" ? "Overdue cases" : due === "upcoming" ? "Due within 24 hours" : mineOnly ? "My cases" : status ? `Cases · ${status}` : "All cases";
 
   return (
-    <Panel title={title}>
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex items-center gap-2 bg-panel2 border border-line rounded px-3 py-2 w-72">
+    <div className="space-y-6">
+      <div className="flex flex-wrap justify-between items-end gap-4"><div><p className="eyebrow text-faint mb-3">Investigation workspace</p><h1 className="text-4xl sm:text-5xl font-bold">{title}</h1><p className="text-sm text-muted mt-3">Follow the signal. Track every investigation.</p></div><Link to="/incidents/new" className="flex items-center gap-2 bg-cyan text-onaccent rounded-lg px-4 py-3 text-sm font-semibold"><Plus size={16} />New incident</Link></div>
+      <div className="flex gap-2 flex-wrap" aria-label="Case views">{[['All cases', '/cases', !status && !mineOnly && !due], ['My cases', '/cases?mine=1', mineOnly], ['Overdue', '/cases?due=overdue', due === 'overdue'], ['Due soon', '/cases?due=upcoming', due === 'upcoming']].map(([label, to, active]) => <Link key={label} to={to} className={`text-xs rounded-lg px-4 py-2 border ${active ? 'bg-paper text-ink border-paper' : 'bg-panel text-muted border-line hover:border-linestrong'}`}>{label}</Link>)}</div>
+    <Panel title="Investigations" right={pagination && <span className="text-xs text-faint">{pagination.total} result{pagination.total === 1 ? '' : 's'}</span>}>
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <div className="flex items-center gap-2 bg-panel2 border border-line rounded-lg px-3 py-1 w-full sm:max-w-md">
           <Search size={14} className="text-faint" />
           <input
+            aria-label="Filter cases"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -76,9 +79,6 @@ export default function CaseList() {
             className="bg-transparent outline-none text-sm text-paper placeholder:text-faint w-full"
           />
         </div>
-        {pagination && (
-          <span className="font-mono text-[11px] text-faint ml-auto">{pagination.total} result{pagination.total === 1 ? "" : "s"}</span>
-        )}
       </div>
 
       {error && <div className="text-thread text-sm mb-3 font-mono">{error}</div>}
@@ -105,11 +105,10 @@ export default function CaseList() {
                 {cases.map((c) => (
                   <tr
                     key={c.id}
-                    onClick={() => navigate(`/cases/${c.id}`)}
-                    className="border-b border-line hover:bg-panel2 cursor-pointer text-paper transition-colors"
+                    className="border-b border-line hover:bg-panel2 text-paper transition-colors"
                   >
                     <td className="py-2 pr-4"><CaseId id={c.id} /></td>
-                    <td className="py-2 pr-4">{c.title}</td>
+                    <td className="py-2 pr-4 min-w-[220px]"><Link to={`/cases/${c.id}`} className="font-semibold hover:underline">{c.title}</Link></td>
                     <td className="py-2 pr-4 text-muted">{c.attack_type || "—"}</td>
                     <td className="py-2 pr-4 text-muted">{c.origin_country || "—"}</td>
                     <td className="py-2 pr-4"><StatusPill status={c.status} /></td>
@@ -147,5 +146,6 @@ export default function CaseList() {
         </>
       )}
     </Panel>
+    </div>
   );
 }

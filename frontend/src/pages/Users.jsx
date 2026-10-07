@@ -90,7 +90,7 @@ function CreateUserModal({ open, onClose, onCreated, token }) {
             <button
               type="submit"
               disabled={saving}
-              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-paper text-xs font-medium px-4 py-2 rounded"
+              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-onaccent text-xs font-medium px-4 py-2 rounded"
             >
               {saving ? "Creating..." : "Create user"}
             </button>
@@ -151,7 +151,7 @@ function ResetPasswordModal({ userRow, onClose, onSaved, token }) {
             <button
               type="submit"
               disabled={saving}
-              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-paper text-xs font-medium px-4 py-2 rounded"
+              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-onaccent text-xs font-medium px-4 py-2 rounded"
             >
               {saving ? "Saving..." : "Reset password"}
             </button>
@@ -223,7 +223,7 @@ export default function Users() {
       right={
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 bg-cyan hover:brightness-110 text-paper text-xs font-medium px-3 py-1.5 rounded"
+          className="flex items-center gap-1.5 bg-cyan hover:brightness-110 text-onaccent text-xs font-medium px-3 py-1.5 rounded"
         >
           <UserPlus size={13} /> New User
         </button>

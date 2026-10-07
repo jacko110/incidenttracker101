@@ -1,6 +1,6 @@
 # Nib Incident Tracking System
 
-A full-stack Nib SOC dashboard: dark-themed incident tracking
+A full-stack Nib SOC dashboard: monochrome incident tracking
 app with role-based access control, a live dashboard, a full incident
 intake wizard, real file uploads, an audit trail, notifications, and team
 chat.
@@ -419,9 +419,9 @@ Applying the same SLA deadline again preserves the reminder marker; changing
 its timestamp resets the marker. SLA application is recorded in case Activity
 History. Policy saves are recorded with their actor in `sla_policy_history`.
 Policy writes and explicit SLA application are transactional with their audit
-entries. Policy history currently has no dedicated UI.
+entries. Admins can filter policy history by severity, page through changes, and export all matching entries as CSV. History entries show the actor, time, and response targets; the CSV includes one row per severity target.
 
-Admin APIs: `GET /api/sla`, `PUT /api/sla` with `{policies: [{severity,
+Admin APIs: `GET /api/sla`, `GET /api/sla/history?severity=&page=&pageSize=` (paged; up to 50 per page), `GET /api/sla/history/export?severity=` (CSV), `PUT /api/sla` with `{policies: [{severity,
 response_hours, enabled}, ...]}` for all four severities, and
 `POST /api/cases/:id/sla` to apply the current policy. Startup creates
 `sla_policies`, `sla_policy_history`, and the `cases.deadline_source` column
@@ -463,3 +463,47 @@ eligible at the first startup after this update.
 Verification includes active-admin filtering, unassigned cases, exclusions,
 no-admin recovery, opt-out behavior, transaction rollback, deadline resets,
 real process restart deduplication, and local SMTP acceptance/rejection.
+
+
+## Case activity export
+
+SOC Admins can open **Case activity** to search audit events across all cases
+by date range, action type, case ID/title, actor, or detail text. Results are
+paginated, and the CSV export includes every matching event, not only the
+visible page. CSV values are quoted and spreadsheet formula prefixes are
+neutralized. The admin-only API is `GET /api/audit/history` with optional
+`from`, `to`, `action`, `q`, `page`, and `pageSize` parameters, plus
+`GET /api/audit/history/export` with the same filters.
+
+## Packaged deployment
+
+The Docker image serves the built frontend and API together on port 4000.
+SQLite and attachments live in the persistent `nib_data` volume. Run one
+application instance with this SQLite deployment.
+
+1. Install Docker with Compose on your server.
+2. Create a root `.env` containing `JWT_SECRET=` followed by a secret generated
+   with `openssl rand -hex 32`. This file is ignored by Git.
+3. Run `docker compose up -d --build`.
+4. Create the first administrator without demo accounts:
+
+   ```sh
+   read -r -p 'Admin username: ' ADMIN_USERNAME
+   read -r -s -p 'Admin password (at least 12 characters): ' ADMIN_PASSWORD
+   export ADMIN_USERNAME ADMIN_PASSWORD
+   docker compose exec -e ADMIN_USERNAME -e ADMIN_PASSWORD nib node create-admin.js
+   unset ADMIN_USERNAME ADMIN_PASSWORD
+   ```
+
+5. Open `http://localhost:4000` and sign in. Use User management for additional
+   accounts. For public access, configure an HTTPS reverse proxy to the bound
+   localhost port. Domain and hosting configuration depend on your server.
+
+`docker compose logs -f nib` shows startup messages. Rebuild with
+`docker compose up -d --build` after pulling updates. Back up the data volume
+while the service is stopped; it contains both the database and attachments.
+Removing the volume deletes stored application data.
+
+GitHub Actions runs backend and frontend checks, the build, and Chromium
+workflow checks on pushes and pull requests. Browser failure artifacts are
+uploaded for inspection. Docker packaging must be checked on a Docker host.

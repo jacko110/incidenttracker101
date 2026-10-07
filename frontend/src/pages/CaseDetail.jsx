@@ -227,14 +227,14 @@ export default function CaseDetail() {
   if (!item) return <div className="text-faint text-sm p-4 font-mono">Loading case...</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <div className="text-sm text-thread bg-thread/10 border border-thread/30 rounded px-3 py-2 font-mono">
           {error}
         </div>
       )}
 
-      <Panel>
+      <Panel className="!border-t-4 !border-t-paper">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-5">
           <div className="w-full flex-1 min-w-0">
             <CaseId id={item.id} className="text-sm" />
@@ -245,7 +245,7 @@ export default function CaseDetail() {
                 className="w-full mt-1.5 bg-panel2 border border-line rounded px-3 py-2 text-lg text-paper outline-none focus:border-cyan transition-colors"
               />
             ) : (
-              <h2 className="font-display text-xl sm:text-2xl text-paper font-semibold mt-2 break-words">{item.title}</h2>
+              <h1 className="font-display text-3xl sm:text-4xl text-paper font-bold mt-3 break-words leading-tight">{item.title}</h1>
             )}
             {item.rejected_by && (
               <div className="mt-2"><RejectedByPill label={item.rejected_by} /></div>
@@ -264,7 +264,7 @@ export default function CaseDetail() {
                 <button
                   onClick={saveEdit}
                   disabled={busy}
-                  className="flex items-center gap-1.5 text-xs bg-cyan hover:brightness-110 disabled:opacity-50 text-ink font-semibold px-3 py-1.5 rounded transition-all"
+                  className="flex items-center gap-1.5 text-xs bg-cyan hover:brightness-110 disabled:opacity-50 text-onaccent font-semibold px-3 py-1.5 rounded transition-all"
                 >
                   <Save size={13} /> Save
                 </button>
@@ -386,7 +386,7 @@ export default function CaseDetail() {
                 onChange={(e) => setDeadlineInput(e.target.value)}
                 className="bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan"
               />
-              <button type="submit" disabled={savingDeadline} className="text-xs bg-cyan text-ink font-semibold px-3 py-2 rounded disabled:opacity-50">
+              <button type="submit" disabled={savingDeadline} className="text-xs bg-cyan text-onaccent font-semibold px-3 py-2 rounded disabled:opacity-50">
                 {savingDeadline ? "Saving…" : "Save deadline"}
               </button>
               {item.due_at && <button type="button" disabled={savingDeadline} onClick={clearDeadline} className="text-xs text-muted hover:text-paper px-2 py-2 disabled:opacity-50">Clear</button>}
@@ -532,7 +532,7 @@ export default function CaseDetail() {
                 <button
                   type="submit"
                   disabled={linking}
-                  className="bg-cyan hover:brightness-110 disabled:opacity-50 text-ink text-xs font-semibold px-4 py-2 rounded transition-all"
+                  className="bg-cyan hover:brightness-110 disabled:opacity-50 text-onaccent text-xs font-semibold px-4 py-2 rounded transition-all"
                 >
                   {linking ? "Linking..." : "Link case"}
                 </button>
@@ -568,7 +568,7 @@ export default function CaseDetail() {
           />
           <button
             type="submit"
-            className="bg-cyan hover:brightness-110 text-ink text-sm font-semibold px-4 py-2 rounded transition-all"
+            className="bg-cyan hover:brightness-110 text-onaccent text-sm font-semibold px-4 py-2 rounded transition-all"
           >
             Add
           </button>

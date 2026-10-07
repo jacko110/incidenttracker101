@@ -48,7 +48,7 @@ export default function Playbooks() {
           <label className="block text-sm">Steps (one per line)<textarea required rows={7} className={field} value={draft.steps} onChange={e => change('steps', e.target.value)} /></label>
           <p className="text-xs text-muted">1–50 steps, up to 500 characters each. Steps appear in this order.</p>
           <label className="flex gap-2 items-center text-sm"><input type="checkbox" checked={draft.active} onChange={e => change('active', e.target.checked)} />Available for new cases</label>
-          <div className="flex gap-3"><button className="bg-cyan text-ink rounded px-4 py-2 text-sm font-semibold" type="submit">{saving ? 'Saving…' : 'Save playbook'}</button>
+          <div className="flex gap-3"><button className="bg-cyan text-onaccent rounded px-4 py-2 text-sm font-semibold" type="submit">{saving ? 'Saving…' : 'Save playbook'}</button>
           {editing && <button type="button" onClick={() => { setDraft(blank); setEditing(null); }}>Cancel edit</button>}</div>
         </fieldset>
       </form>

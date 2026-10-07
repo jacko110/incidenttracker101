@@ -14,6 +14,60 @@ async function newCase(page, title) {
     return response.json();
   }, title);
 }
+test('sidebar hides user identity and dark mode persists across refresh', async ({ page }) => {
+  await login(page, 'admin');
+  const sidebar = page.getByRole('complementary');
+  await expect(sidebar.getByText('admin', { exact: true })).toHaveCount(0);
+  await expect(sidebar.getByText('SOC Admin', { exact: true })).toHaveCount(0);
+  const toggle = sidebar.getByRole('button', { name: 'Dark mode', exact: true });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.goto('/cases');
+  await expect(page.locator('main').getByRole('heading', { name: 'All cases', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(sidebar.getByRole('button', { name: 'Dark mode', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await sidebar.getByRole('button', { name: 'Dark mode', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+test('IR rejects, admin archives and restores, then exports filtered activity', async ({ page }) => {
+  await login(page, 'ir');
+  const incident = await newCase(page, 'Lifecycle walkthrough');
+  await page.goto(`/cases/${incident.id}`);
+  page.once('dialog', dialog => dialog.accept('Confirmed false positive'));
+  await page.getByRole('button', { name: 'Reject', exact: true }).click();
+  await expect(page.getByText('Confirmed false positive', { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Archive case' })).toHaveCount(0);
+  await page.goto('/audit');
+  await expect(page).toHaveURL('http://127.0.0.1:5175/');
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await login(page, 'admin');
+  await page.goto(`/cases/${incident.id}`);
+  await page.getByRole('button', { name: 'Archive case' }).click();
+  await expect(page).toHaveURL(/\/archive$/);
+  const archivedRow = page.getByText('Lifecycle walkthrough', { exact: true }).locator('..');
+  await archivedRow.locator('..').getByRole('button', { name: 'Restore', exact: true }).click();
+  await expect(page.getByText('Lifecycle walkthrough', { exact: true })).toHaveCount(0);
+  await page.goto('/audit');
+  await page.getByRole('textbox', { name: 'Search case activity', exact: true }).fill('Lifecycle walkthrough');
+  await page.getByLabel('Action', { exact: true }).selectOption('restored');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+  await expect(page.locator('tbody')).toContainText('admin');
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export CSV' }).click();
+  const download = await downloadPromise;
+  const fs = require('node:fs');
+  const csv = fs.readFileSync(await download.path(), 'utf8');
+  expect(csv).toContain('Lifecycle walkthrough');
+  expect(csv).toContain('"restored"');
+  expect(csv).not.toContain('"archived"');
+  const invalid = await page.request.get('/api/audit/history?from=2026-02-31', {
+    headers: { Authorization: `Bearer ${await page.evaluate(() => sessionStorage.getItem('nib_token'))}` },
+  });
+  expect(invalid.status()).toBe(400);
+});
 test('Nib sign-in persists through refresh, protects admin pages and logs out', async ({ page }) => {
   await login(page);
   await expect(page).toHaveTitle('Nib Incident Tracking System');
@@ -93,7 +147,7 @@ test('mobile navigation closes after selection and pages fit the viewport', asyn
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL('http://127.0.0.1:5175/');
   await page.getByRole('button', { name: 'Toggle navigation' }).click();
-  await page.getByRole('link', { name: 'My cases', exact: true }).click();
+  await page.getByRole('navigation').getByRole('link', { name: 'My cases', exact: true }).click();
   await expect(page).toHaveURL(/mine=1/);
   await expect(page.getByRole('button', { name: 'Close navigation' })).toHaveCount(0);
   for (const route of ['/cases?mine=1', '/incidents/new']) {

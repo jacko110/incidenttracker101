@@ -1,0 +1,13 @@
+services:
+  nib:
+    build: .
+    ports:
+      - "127.0.0.1:4000:4000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env file}
+      SEED_DEMO: "false"
+    volumes:
+      - nib_data:/app/data
+    restart: unless-stopped
+volumes:
+  nib_data:

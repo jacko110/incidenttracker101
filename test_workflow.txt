@@ -299,3 +299,17 @@ recovery without duplicate escalation. Test data was isolated; existing
 application records were not modified. External mail-provider delivery and
 PostgreSQL execution remain outside this validation. Manual checklist boxes
 above are intentionally unchanged by this automated run.
+RELEASE CHECKS: CASE ACTIVITY AND DEPLOYMENT
+
+1. Sign in as SOC Admin and open Case activity.
+2. Filter by a case title and an action, then apply the filters.
+3. Confirm the listed case, actor, time, action, and details match its history.
+4. Export CSV and confirm it contains all matching events, including those
+   beyond the current page. Confirm other actions are excluded.
+5. Sign in as each analyst role and confirm Case activity is inaccessible.
+6. Follow the Packaged deployment section of README.md on a Docker host.
+7. Create the first administrator, sign in, and create analyst accounts.
+8. Create an incident with an attachment; restart the container and confirm
+   both the case and downloaded attachment persist.
+9. Open a case URL directly and refresh it to confirm frontend routing works.
+10. Check /api/health returns {"ok":true}; configure HTTPS before public use.

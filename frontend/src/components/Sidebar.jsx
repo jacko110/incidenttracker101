@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, FileWarning, LayoutGrid, ChevronUp, ChevronDown,
-  Clock, PlayCircle, CheckCircle2, AlertTriangle, XCircle, Archive, MessageCircle,
-  LogOut, UserCheck, Users as UsersIcon, Search,
+  Clock, PlayCircle, CheckCircle2, AlertTriangle, XCircle, Archive, MessageCircle, History,
+  LogOut, UserCheck, Users as UsersIcon, Search, Shield, Plus, Moon, Sun,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { roleLabel, canManageUsers } from "../permissions";
+import { canManageUsers } from "../permissions";
+import { useTheme } from "../context/ThemeContext";
 import { STATUS_COLOR } from "./StatusPill";
 
 const caseList = [
-  { icon: LayoutGrid, label: "All cases", status: null, color: "#A4A9B5" },
+  { icon: LayoutGrid, label: "All cases", status: null, color: "#b7b7ad" },
   { icon: Clock, label: "Under review", status: "Under Review", color: STATUS_COLOR["Under Review"] },
   { icon: PlayCircle, label: "In progress", status: "In Progress", color: STATUS_COLOR["In Progress"] },
   { icon: CheckCircle2, label: "Completed", status: "Completed", color: STATUS_COLOR["Completed"] },
@@ -24,29 +25,20 @@ export default function Sidebar({ open, counts }) {
   const params = new URLSearchParams(location.search);
   const isCaseActive = (status) => location.pathname === "/cases" && params.get("mine") !== "1" && !params.has("due") && (params.get("status") || null) === status;
   const [caseListOpen, setCaseListOpen] = useState(true);
-  const initials = (user?.username || "?").slice(0, 2).toUpperCase();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 md:static bg-[#191B20] border-r border-line flex flex-col shrink-0 transition-all duration-200 ${
-        open ? "w-[248px]" : "w-0 overflow-hidden"
+      className={`workspace-sidebar fixed inset-y-0 left-0 z-40 md:static border-r flex flex-col shrink-0 transition-all duration-200 ${
+        open ? "w-[260px]" : "w-0 overflow-hidden"
       }`}
     >
       <div className="px-6 pt-7 pb-6 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-cyan/10 border border-cyan/20 flex items-center justify-center text-cyan font-semibold text-lg">N</div>
-        <div><div className="text-xl font-semibold tracking-tight">Nib<span className="text-faint text-xs font-normal ml-2">workspace</span></div><div className="text-xs text-faint mt-0.5">Incident management</div></div>
+        <div className="w-10 h-10 rounded-xl bg-[#f5f4f0] flex items-center justify-center text-[#20211f]"><Shield size={23} /></div>
+        <div><div className="text-2xl font-display font-bold tracking-tight">Nib<span className="text-[#f5f4f0]">.</span></div><div className="text-[10px] uppercase tracking-[.16em] text-faint mt-0.5">Response workspace</div></div>
       </div>
 
-      <div className="mx-4 mb-4 flex items-center gap-3 bg-panel border border-line rounded-xl px-3 py-3">
-        <div className="w-8 h-8 rounded-full bg-ink border border-line flex items-center justify-center text-xs font-semibold text-cyan">
-          {initials}
-        </div>
-        <div className="leading-tight min-w-0">
-          <div className="text-sm text-paper font-medium truncate">{user?.username || "Guest"}</div>
-          <div className="text-xs text-muted">{roleLabel(user?.role) || ""}</div>
-        </div>
-      </div>
-
+      <Link to="/incidents/new" className="mx-4 mb-5 flex items-center justify-center gap-2 rounded-lg bg-[#f5f4f0] px-3 py-3 text-[#20211f] font-semibold text-sm"><Plus size={17} />New incident</Link>
       <nav className="flex-1 overflow-y-auto px-3 text-sm">
         <div className="nav-caption !pt-1">Workspace</div>
         <SideLink to="/" icon={LayoutDashboard} label="Dashboard" end />
@@ -79,7 +71,7 @@ export default function Sidebar({ open, counts }) {
                   <span className="flex-1 text-left truncate">{item.label}</span>
                   <span
                     className="font-mono text-[10px] rounded-full px-1.5 py-0.5"
-                    style={{ backgroundColor: "#ffffff06", color: "#A4A9B5" }}
+                    style={{ backgroundColor: "#ffffff06", color: "#b7b7ad" }}
                   >
                     {item.status ? counts?.byStatus?.[item.status] ?? 0 : counts?.total ?? 0}
                   </span>
@@ -99,6 +91,7 @@ export default function Sidebar({ open, counts }) {
         <SideLink to="/chat" icon={MessageCircle} label="Chat" />
         {canManageUsers(user?.role) && <div className="nav-caption">Administration</div>}
         {canManageUsers(user?.role) && <SideLink to="/sla" icon={Clock} label="SLA policies" />}
+        {canManageUsers(user?.role) && <SideLink to="/audit" icon={History} label="Case activity" />}
         {canManageUsers(user?.role) && <SideLink to="/playbooks" icon={CheckCircle2} label="Playbooks" />}
         {canManageUsers(user?.role) && (
           <SideLink to="/users" icon={UsersIcon} label="User management" />
@@ -106,6 +99,11 @@ export default function Sidebar({ open, counts }) {
       </nav>
 
       <div className="px-3 py-4 border-t border-line">
+        <button onClick={toggleTheme} aria-pressed={theme === 'dark'} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted text-left text-sm">
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          <span className="flex-1">Dark mode</span>
+          <span aria-hidden="true" className={`w-8 h-4 rounded-full p-0.5 ${theme === 'dark' ? 'bg-[#f5f4f0]' : 'bg-[#55564f]'}`}><span className={`block w-3 h-3 rounded-full ${theme === 'dark' ? 'translate-x-4 bg-[#20211f]' : 'bg-white'}`} /></span>
+        </button>
         <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-faint hover:bg-panel2 hover:text-muted text-left transition-colors"

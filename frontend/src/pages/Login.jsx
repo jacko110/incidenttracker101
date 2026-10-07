@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Shield, ArrowUpRight, Check } from 'lucide-react';
 
 const SHOW_DEMO = import.meta.env.DEV && import.meta.env.VITE_SHOW_DEMO === "true";
 const DEMO_USERS = [
@@ -35,22 +36,23 @@ export default function Login() {
   }
 
   return (
-    <div className="login-shell min-h-screen w-full flex items-center justify-center px-4">
-      <div className="w-full max-w-[440px]">
-        <div className="text-center mb-8">
-          <div className="font-display text-3xl font-semibold tracking-tight text-paper">
-            Nib<span className="text-cyan">.</span>
-          </div>
-          <div className="font-body text-xs font-medium text-faint mt-1.5">
-            Your incident workspace
-          </div>
-        </div>
+    <div className="login-shell min-h-screen w-full grid lg:grid-cols-2">
+      <section className="login-story hidden lg:flex flex-col justify-between p-12 xl:p-16 text-white">
+        <div className="flex items-center gap-3"><Shield size={27} /><span className="font-display text-3xl font-bold">Nib.</span><span className="ml-auto eyebrow text-white/50">Incident management</span></div>
+        <div className="max-w-lg py-16"><p className="eyebrow text-white/50 mb-6">Clarity under pressure</p><h2 className="text-6xl xl:text-7xl font-bold leading-[1.04]">Every incident.<br />A clear<br />next move.</h2><p className="text-white/60 text-lg leading-relaxed mt-7 max-w-sm">One workspace to investigate, coordinate, and bring your response into focus.</p>
+          <div className="mt-10 space-y-4 text-sm text-white/80">{['Track the full investigation', 'Keep response deadlines in view', 'Coordinate your team’s next steps'].map(text => <div key={text} className="flex gap-3 items-center"><Check size={16} />{text}</div>)}</div></div>
+        <div className="border-t border-white/20 pt-5 flex justify-between text-xs text-white/50"><span>Built for your response team</span><ArrowUpRight size={16} /></div>
+      </section>
+      <div className="flex items-center justify-center px-6 py-12 sm:px-12">
+      <div className="w-full max-w-[400px]">
+        <div className="font-display text-3xl font-bold mb-16 lg:hidden">Nib.</div>
+        <p className="eyebrow text-faint mb-4">Your workspace awaits</p>
 
-        <h1 className="text-2xl font-semibold text-center mb-2">Welcome back</h1>
-        <p className="text-sm text-muted text-center mb-7">Sign in to continue your investigations.</p>
+        <h1 className="text-4xl sm:text-5xl font-bold mb-4">Welcome back.</h1>
+        <p className="text-sm text-muted mb-9">Sign in to continue your investigations.</p>
         <form
           onSubmit={handleSubmit}
-          className="bg-panel border border-line rounded-2xl p-7 sm:p-9 space-y-5"
+          className="space-y-6"
         >
           <div>
             <label className="font-body text-xs font-medium text-muted mb-1.5 block">Username</label>
@@ -58,7 +60,7 @@ export default function Login() {
               aria-label="Username" autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
+              className="w-full bg-panel border border-line rounded px-4 py-3 text-sm text-paper outline-none focus:border-cyan transition-colors"
             />
           </div>
           <div>
@@ -67,7 +69,7 @@ export default function Login() {
               type="password" aria-label="Password" autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-panel2 border border-line rounded px-3 py-2 text-sm text-paper outline-none focus:border-cyan transition-colors"
+              className="w-full bg-panel border border-line rounded px-4 py-3 text-sm text-paper outline-none focus:border-cyan transition-colors"
             />
           </div>
 
@@ -76,7 +78,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-cyan hover:brightness-110 transition-all text-ink text-sm font-semibold rounded py-2 disabled:opacity-50"
+            className="w-full bg-cyan hover:brightness-110 transition-all text-onaccent text-sm font-semibold rounded-lg py-3.5 disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
@@ -103,6 +105,8 @@ export default function Login() {
             </div>
           </div>}
         </form>
+        <p className="mt-10 pt-6 border-t border-line text-xs text-faint">Access is managed by your workspace administrator.</p>
+      </div>
       </div>
     </div>
   );

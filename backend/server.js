@@ -25,8 +25,19 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/iocs", iocRoutes);
+app.use("/api/audit", require("./routes/audit"));
 app.use("/api", require("./routes/playbooks"));
 app.use("/api", require("./routes/sla"));
+
+// Serve the built application when running the packaged production server.
+const path = require('path');
+const fs = require('fs');
+const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found' }));
+if (fs.existsSync(path.join(frontendDist, 'index.html'))) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

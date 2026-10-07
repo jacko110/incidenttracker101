@@ -6,9 +6,10 @@ export function Panel({ title, right, children, className = '' }) {
     </div>}{children}
   </div>;
 }
-export function StatCard({ label, value, icon: Icon }) {
-  return <div className="nib-card flex flex-col gap-5">
-    <div className="flex items-center justify-between gap-2"><span className="text-sm text-muted">{label}</span><Icon size={18} className="text-faint" /></div>
-    <div className="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums">{value ?? 0}</div>
+export function StatCard({ label, value, icon: Icon, color }) {
+  return <div className="nib-card flex items-center justify-between gap-3">
+    <div><span className="text-xs font-medium text-muted">{label}</span>
+    <div className="font-display text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums mt-3">{value ?? 0}</div></div>
+    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ color: color || 'rgb(var(--paper))', backgroundColor: color ? `${color}12` : 'rgb(var(--panel2))' }}><Icon size={20} /></div>
   </div>;
 }

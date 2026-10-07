@@ -62,17 +62,17 @@ export default function Topbar({ onToggleSidebar, crumb }) {
   }
 
   return (
-    <header className="h-[72px] border-b border-line flex items-center justify-between px-3 md:px-6 shrink-0 bg-ink/95">
+    <header className="h-[72px] border-b border-line flex items-center justify-between px-3 md:px-6 shrink-0 bg-panel/95">
       <div className="flex items-center gap-3 font-body text-xs font-medium">
         <button aria-label="Toggle navigation" onClick={onToggleSidebar} className="text-muted hover:text-paper mr-1 transition-colors">
           <Menu size={17} />
         </button>
-        <span className="hidden sm:inline text-faint">Workspace /</span>
+        <span className="hidden sm:inline text-faint">Operations /</span>
         <span className="text-paper normal-case tracking-normal font-body text-sm">{crumb}</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center gap-2 bg-panel border border-line rounded-xl px-3 py-1.5 w-64">
+        <div className="hidden md:flex items-center gap-2 bg-panel2 border border-line rounded-lg px-3 py-0.5 w-64">
           <Search size={13} className="text-faint" />
           <form onSubmit={(event) => {
             event.preventDefault();
@@ -100,7 +100,7 @@ export default function Topbar({ onToggleSidebar, crumb }) {
           >
             <Bell size={16} />
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-thread text-paper text-[9px] flex items-center justify-center font-mono">
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-thread text-white text-[9px] flex items-center justify-center font-mono">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}

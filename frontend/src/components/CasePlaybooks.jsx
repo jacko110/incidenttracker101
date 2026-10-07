@@ -33,7 +33,7 @@ export default function CasePlaybooks({ caseId, readOnly, onChange }) {
         <form className="flex flex-wrap gap-2" onSubmit={e => { e.preventDefault(); if (selected) mutate(() => api.attachPlaybook(token, caseId, Number(selected))); }}>
           <select aria-label="Playbook template" className="min-w-0 max-w-full bg-panel2 border border-line rounded p-2 text-sm" value={selected} disabled={busy} onChange={e => setSelected(e.target.value)}>
             <option value="">Choose a playbook</option>{available.map(template => <option key={template.id} value={template.id}>{template.name}</option>)}
-          </select><button disabled={busy || !selected} className="bg-cyan text-ink rounded px-3 py-2 text-sm disabled:opacity-50">Attach playbook</button>
+          </select><button disabled={busy || !selected} className="bg-cyan text-onaccent rounded px-3 py-2 text-sm disabled:opacity-50">Attach playbook</button>
         </form> : <p className="text-muted text-sm">{playbooks.length ? 'All available templates are attached.' : 'No playbook templates available. Ask an admin to create one.'}</p>}
       {!playbooks.length && <p className="text-sm text-muted">No playbooks attached to this case.</p>}
       {playbooks.map(playbook => {

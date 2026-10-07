@@ -59,7 +59,7 @@ function Stepper({ step }) {
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
                 step === s.n
-                  ? "bg-cyan text-ink"
+                  ? "bg-cyan text-onaccent"
                   : step > s.n
                   ? "bg-cyan/25 text-cyan"
                   : "border border-line text-faint"
@@ -263,9 +263,9 @@ export default function CreateIncident() {
   }
 
   return (
-    <div className="-m-6">
-      <div className="px-6 py-5 border-b border-line flex items-center justify-between">
-        <h1 className="font-display text-lg font-semibold text-paper tracking-wide">Add New Incident</h1>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="flex items-start justify-between gap-4">
+        <div><p className="eyebrow text-faint mb-3">Incident intake</p><h1 className="font-display text-3xl sm:text-4xl font-bold text-paper">Add New Incident</h1><p className="text-sm text-muted mt-3">Capture the signal. Build the investigation.</p></div>
         <button
           onClick={() => navigate("/incidents")}
           className="w-8 h-8 rounded flex items-center justify-center text-muted hover:bg-panel2 hover:text-paper"
@@ -274,12 +274,12 @@ export default function CreateIncident() {
         </button>
       </div>
 
-      <div className="border-b border-line">
+      <div className="bg-panel border border-line rounded-xl">
         <Stepper step={step} />
       </div>
 
-      <div className="p-6 max-w-5xl">
-        <div className="bg-panel border border-line rounded-xl p-6">
+      <div className="w-full">
+        <div className="bg-panel border border-line rounded-xl p-4 sm:p-7">
           {error && (
             <div className="mb-5 text-sm text-thread bg-thread/10 border border-thread/30 rounded px-3 py-2">
               {error}
@@ -563,7 +563,7 @@ export default function CreateIncident() {
                   <button
                     type="button"
                     onClick={addIoc}
-                    className="bg-cyan hover:brightness-110 text-ink text-sm font-semibold px-5 py-2 rounded transition-all"
+                    className="bg-cyan hover:brightness-110 text-onaccent text-sm font-semibold px-5 py-2 rounded transition-all"
                   >
                     Add IOC
                   </button>
@@ -683,7 +683,7 @@ export default function CreateIncident() {
             <button
               type="button"
               onClick={goNext}
-              className="bg-cyan hover:brightness-110 text-ink text-sm font-semibold px-5 py-2.5 rounded transition-all"
+              className="bg-cyan hover:brightness-110 text-onaccent text-sm font-semibold px-5 py-2.5 rounded transition-all"
             >
               Next
             </button>
@@ -692,7 +692,7 @@ export default function CreateIncident() {
               type="button"
               onClick={submit}
               disabled={saving}
-              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-ink text-sm font-semibold px-5 py-2.5 rounded transition-all"
+              className="bg-cyan hover:brightness-110 disabled:opacity-50 text-onaccent text-sm font-semibold px-5 py-2.5 rounded transition-all"
             >
               {saving ? "Submitting..." : "Submit Incident"}
             </button>
@@ -714,7 +714,7 @@ function ReviewSection({ title, children }) {
 
 function ReviewRow({ label, value, block }) {
   return (
-    <div className={block ? "" : "grid grid-cols-[180px_1fr] gap-3"}>
+    <div className={block ? "" : "grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-1 sm:gap-3"}>
       <div className="text-sm text-faint">{label}</div>
       <div className={`text-sm text-paper ${block ? "mt-1" : ""}`}>{value || "—"}</div>
     </div>
